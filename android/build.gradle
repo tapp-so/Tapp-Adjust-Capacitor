@@ -1,0 +1,60 @@
+buildscript {
+    ext.kotlin_version = rootProject.ext.has('kotlinVersion') ? rootProject.ext.kotlinVersion : '2.2.20'
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        // Host apps use their root build script's AGP; keep this classpath at Capacitor 6's
+        // AGP 8.2.1 to avoid pulling a newer AGP onto a JDK 17 host.
+        // Standalone builds need AGP 8.9.1+ for Capacitor 8's AndroidX dependencies:
+        // CI passes -PandroidGradlePluginVersion=8.13.0 (or set rootProject.ext.androidGradlePluginVersion).
+        classpath "com.android.tools.build:gradle:${rootProject.ext.has('androidGradlePluginVersion') ? rootProject.ext.androidGradlePluginVersion : '8.2.1'}"
+        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+    }
+}
+
+apply plugin: 'com.android.library'
+apply plugin: 'kotlin-android'
+
+// This plugin and tapp-capacitor-sdk both ship com.example.tapp.Tapp and register the "Tapp"
+// plugin name, so they cannot share a host app. findProject reads the settings-declared project
+// set, so this fails during host configuration whichever project is evaluated first.
+if (rootProject.findProject(':tapp-capacitor-sdk') != null) {
+    throw new GradleException("Install exactly one of tapp-capacitor-sdk or tapp-adjust-capacitor-sdk.")
+}
+
+android {
+    namespace 'so.tapp.capacitor.adjust'
+    compileSdk rootProject.ext.has('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 36
+    defaultConfig {
+        minSdkVersion rootProject.ext.has('minSdkVersion') ? rootProject.ext.minSdkVersion : 24
+        targetSdkVersion rootProject.ext.has('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 36
+        consumerProguardFiles 'proguard-rules.pro'
+    }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    kotlinOptions {
+        jvmTarget = '17'
+    }
+    lint {
+        abortOnError false
+    }
+}
+
+repositories {
+    google()
+    mavenCentral()
+    maven { url 'https://jitpack.io' }
+}
+
+dependencies {
+    implementation project(':capacitor-android')
+    implementation 'com.github.tapp-so.Tapp-Android:Tapp-Adjust:1.1.6'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1'
+    implementation "androidx.appcompat:appcompat:${rootProject.ext.has('androidxAppCompatVersion') ? rootProject.ext.androidxAppCompatVersion : '1.7.1'}"
+    testImplementation 'junit:junit:4.13.2'
+    testImplementation 'org.json:json:20250517'
+}

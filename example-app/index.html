@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta name="theme-color" content="#182d47" />
+    <title>Tapp Adjust Capacitor Example</title>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Tapp Adjust Capacitor Example</h1>
+        <p>Start the SDK, generate links, and inspect events on an iOS or Android device.</p>
+        <p id="status" role="status">Idle — enter credentials and press Start.</p>
+      </header>
+
+      <section aria-labelledby="setup-title">
+        <h2 id="setup-title">SDK setup</h2>
+        <p>
+          Credentials stay in memory for this session. They are passed to Tapp when you press Start.
+        </p>
+        <label for="auth-token">authToken</label>
+        <input id="auth-token" type="password" placeholder="YOUR_AUTH_TOKEN" autocomplete="off" />
+        <label for="tapp-token">tappToken</label>
+        <input id="tapp-token" type="password" placeholder="YOUR_TAPP_TOKEN" autocomplete="off" />
+        <label for="environment">Environment</label>
+        <select id="environment">
+          <option value="SANDBOX" selected>SANDBOX</option>
+          <option value="PRODUCTION">PRODUCTION</option>
+        </select>
+        <button id="start" type="button">Start</button>
+      </section>
+
+      <fieldset id="actions" disabled>
+        <legend>SDK actions</legend>
+        <section aria-labelledby="generate-title">
+          <h2 id="generate-title">Generate a link</h2>
+          <label for="influencer">Influencer</label>
+          <input id="influencer" placeholder="example_creator" />
+          <button id="generate" type="button">Generate URL</button>
+        </section>
+
+        <section aria-labelledby="event-title">
+          <h2 id="event-title">Send an event</h2>
+          <label for="event-action">Action</label>
+          <select id="event-action">
+            <option value="CUSTOM">CUSTOM</option>
+            <option value="TAPP_ADD_TO_WISHLIST">TAPP_ADD_TO_WISHLIST</option>
+            <option value="TAPP_PURCHASE">TAPP_PURCHASE</option>
+          </select>
+          <p>
+            Sample metadata: currency: "EUR", price: 10.34, count: 3, success: true. An invalid
+            nested value is also sent to demonstrate that the SDK drops it.
+          </p>
+          <button id="send-event" type="button">Send event</button>
+        </section>
+
+        <section aria-labelledby="links-title">
+          <h2 id="links-title">Resolve links</h2>
+          <label for="link-url">URL</label>
+          <input id="link-url" type="url" placeholder="https://your-tapp-domain.example/path" />
+          <div class="buttons">
+            <button id="should-process" type="button">Should process</button>
+            <button id="fetch-link" type="button">Fetch link data</button>
+            <button id="fetch-origin" type="button">Fetch origin link data</button>
+          </div>
+        </section>
+
+        <section aria-labelledby="adjust-title">
+          <h2 id="adjust-title">Adjust</h2>
+          <p>
+            Every button calls the plugin on every platform. A method that the current platform
+            does not implement rejects with UNIMPLEMENTED, shown as "unsupported on this platform".
+            Tokens you type here are sent to the SDK but are never displayed or logged.
+          </p>
+          <p id="adjust-result" role="status" aria-live="polite">No Adjust call yet.</p>
+
+          <h3>Events and attribution</h3>
+          <label for="adjust-event-token">Adjust event token</label>
+          <input id="adjust-event-token" type="password" placeholder="EVENT_TOKEN" autocomplete="off" />
+          <div class="buttons">
+            <button id="adjust-handle-event" type="button">handleEvent</button>
+            <button id="adjust-attribution" type="button">getAdjustAttribution</button>
+            <button id="adjust-adid" type="button">adjustGetAdid</button>
+            <button id="adjust-sdk-version" type="button">adjustGetSdkVersion</button>
+          </div>
+
+          <h3>Enable, disable, offline</h3>
+          <div class="buttons">
+            <button id="adjust-enable" type="button">adjustEnable</button>
+            <button id="adjust-disable" type="button">adjustDisable</button>
+            <button id="adjust-is-enabled" type="button">adjustIsEnabled</button>
+            <button id="adjust-offline" type="button">adjustSwitchToOfflineMode</button>
+            <button id="adjust-online" type="button">adjustSwitchBackToOnlineMode</button>
+          </div>
+
+          <h3>Global parameters</h3>
+          <label for="adjust-param-key">Key</label>
+          <input id="adjust-param-key" placeholder="example_key" autocomplete="off" />
+          <label for="adjust-param-value">Value</label>
+          <input id="adjust-param-value" placeholder="example_value" autocomplete="off" />
+          <div class="buttons">
+            <button id="adjust-add-callback" type="button">Add callback parameter</button>
+            <button id="adjust-add-partner" type="button">Add partner parameter</button>
+            <button id="adjust-remove-callback" type="button">Remove callback parameter</button>
+            <button id="adjust-remove-partner" type="button">Remove partner parameter</button>
+          </div>
+        </section>
+
+        <section aria-labelledby="adjust-ios-title">
+          <h2 id="adjust-ios-title">Adjust: iOS-only calls</h2>
+          <p>
+            App Tracking Transparency needs <code>NSUserTrackingUsageDescription</code> in the
+            host app's Info.plist (see the example README). These calls reject with UNIMPLEMENTED on
+            Android.
+          </p>
+          <div class="buttons">
+            <button id="adjust-att-request" type="button">Request ATT authorization</button>
+            <button id="adjust-att-status" type="button">ATT status</button>
+          </div>
+          <label for="adjust-skan-value">SKAN conversion value (integer)</label>
+          <input id="adjust-skan-value" type="number" step="1" value="1" />
+          <button id="adjust-skan" type="button">Update SKAN conversion value</button>
+          <label for="adjust-convert-link">Universal link</label>
+          <input id="adjust-convert-link" type="url" placeholder="https://your-link-domain.example/path" />
+          <label for="adjust-convert-scheme">Scheme</label>
+          <input id="adjust-convert-scheme" placeholder="yourapp" autocomplete="off" />
+          <button id="adjust-convert" type="button">adjustConvert</button>
+        </section>
+
+        <section aria-labelledby="adjust-android-title">
+          <h2 id="adjust-android-title">Adjust: Android-only calls</h2>
+          <p>These calls reject with UNIMPLEMENTED on iOS.</p>
+          <div class="buttons">
+            <button id="adjust-referrer" type="button">Install referrer</button>
+            <button id="adjust-google-ad-id" type="button">Google Ad ID</button>
+            <button id="adjust-amazon-ad-id" type="button">Amazon Ad ID</button>
+          </div>
+          <label for="adjust-play-product">Play product ID</label>
+          <input id="adjust-play-product" placeholder="example.product" autocomplete="off" />
+          <label for="adjust-play-token">Play purchase token (sent as transactionId)</label>
+          <input id="adjust-play-token" type="password" placeholder="PURCHASE_TOKEN" autocomplete="off" />
+          <button id="adjust-play-verify" type="button">Verify Play Store purchase</button>
+        </section>
+      </fieldset>
+
+      <section aria-labelledby="log-title">
+        <div class="log-heading">
+          <h2 id="log-title">Log</h2>
+          <button id="clear-log" type="button">Clear log</button>
+        </div>
+        <pre id="log" role="log" aria-live="polite" aria-relevant="additions" tabindex="0"></pre>
+      </section>
+    </main>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
