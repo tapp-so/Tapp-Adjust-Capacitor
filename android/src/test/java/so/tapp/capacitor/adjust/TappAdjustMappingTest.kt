@@ -229,6 +229,14 @@ class TappAdjustMappingTest {
     }
 
     @Test
+    fun coreGateRequiresStartedAndInstance() {
+        assertEquals(TappAdjustMapping.Gate.NOT_STARTED, TappAdjustMapping.coreGate(started = false, hasInstance = false))
+        assertEquals(TappAdjustMapping.Gate.NOT_STARTED, TappAdjustMapping.coreGate(started = false, hasInstance = true))
+        assertEquals(TappAdjustMapping.Gate.NOT_STARTED, TappAdjustMapping.coreGate(started = true, hasInstance = false))
+        assertEquals(TappAdjustMapping.Gate.PROCEED, TappAdjustMapping.coreGate(started = true, hasInstance = true))
+    }
+
+    @Test
     fun globalParametersPassKeyFirstOnAndroid() {
         val args = TappAdjustMapping.globalParameterArgs(key = "k", value = "v")
         assertEquals("k", args.first)

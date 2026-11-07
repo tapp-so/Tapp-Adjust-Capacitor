@@ -742,7 +742,9 @@ export interface AdjustSkanConversionValueOptions {
  */
 export interface AdjustPlayStoreSubscriptionOptions {
   /**
-   * Finite subscription price, passed to the native SDK as an integer.
+   * Subscription price in micro-units (for example 9.99 becomes 9990000), typically Google Play
+   * Billing's `priceAmountMicros`. The value is converted to a native `Long`: fractional input is
+   * truncated toward zero, not rounded or converted.
    * @since 0.1.0
    */
   price: number;

@@ -109,6 +109,7 @@ jobs:
         uses: actions/checkout@v7
         with:
           repository: tapp-so/Tapp-Capacitor
+          ref: b439231c9ce4bfea27bfb626e258464f93a2a1f2 # tapp-capacitor-sdk main at PR #8 merge, the tree tested locally
           path: core
           persist-credentials: false
       - uses: actions/setup-node@v7

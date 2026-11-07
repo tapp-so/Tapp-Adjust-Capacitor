@@ -8,7 +8,7 @@ It is a superset of [`tapp-capacitor-sdk`](https://github.com/tapp-so/Tapp-Capac
 
 > **Choose exactly one plugin.** Install either `tapp-capacitor-sdk` or `tapp-adjust-capacitor-sdk`, never both.
 >
-> - **Android:** if both are installed, the Android build fails by design. This plugin's `android/build.gradle` stops the configuration with `Install exactly one of tapp-capacitor-sdk or tapp-adjust-capacitor-sdk.` when the host also includes the `:tapp-capacitor-sdk` project. Both plugins ship a `com.example.tapp.Tapp` class and register the same `Tapp` plugin name. The guard lives only in this plugin, and a CI job (`exclusive-install`) checks it.
+> - **Android:** if both are installed, the Android build fails by design. This plugin's `android/build.gradle` stops the configuration with `Install exactly one of tapp-capacitor-sdk or tapp-adjust-capacitor-sdk.` when the host also includes the `:tapp-capacitor-sdk` project. Both plugins ship a `com.example.tapp.Tapp` class and register the same `Tapp` plugin name. The guard lives only in this plugin, and a CI job (`exclusive-install`) is intended to check it (it has not run yet; see Known limitations).
 > - **iOS:** there is **no compile-time guard**. Installing both is unsupported and unsafe: the Adjust adapter overrides the affiliate service for the whole process, so the core plugin could silently run with the Adjust affiliate.
 >
 > To switch plugins, uninstall one, then install the other and run `npx cap sync`.
@@ -355,7 +355,7 @@ try {
 
 | Method | Result | Notes |
 |---|---|---|
-| `adjustTrackPlayStoreSubscription({ price, currency, sku, orderId, signature, purchaseToken, purchaseTime? })` | `void` | `price` and `purchaseTime` are finite numbers converted to native `Long`. |
+| `adjustTrackPlayStoreSubscription({ price, currency, sku, orderId, signature, purchaseToken, purchaseTime? })` | `void` | `price` and `purchaseTime` are finite numbers converted to native `Long`. Pass `price` in micro-units (for example 9.99 → 9990000, typically Google Play Billing's `priceAmountMicros`); fractional input is truncated toward zero, not rounded or converted. |
 | `adjustVerifyPlayStorePurchase({ transactionId, productId })` | `VerifyResult` | `transactionId` is the Play purchase token; see the [mapping note](#play-store-verify-mapping). |
 | `adjustVerifyAndTrackPlayStorePurchase({ eventToken })` | `VerifyResult` | |
 | `adjustGetGoogleAdId()` | `{ googleAdId?: string }` | |
@@ -425,7 +425,7 @@ Core methods (`start`, `url`, `handleTappEvent`, `shouldProcess`, `fetchLinkData
 | `adjustRequestAppTrackingAuthorization` | Yes | No | Needs `NSUserTrackingUsageDescription` |
 | `adjustAppTrackingAuthorizationStatus` | Yes | No | Promise |
 | `adjustUpdateSkanConversionValue` | Yes | No | |
-| `adjustTrackPlayStoreSubscription` | No | Yes | |
+| `adjustTrackPlayStoreSubscription` | No | Yes | `price` in micro-units; fractional input is truncated |
 | `adjustVerifyPlayStorePurchase` | No | Yes | `transactionId` is the purchase token |
 | `adjustVerifyAndTrackPlayStorePurchase` | No | Yes | |
 | `adjustGetGoogleAdId` | No | Yes | |
@@ -623,9 +623,9 @@ The plugin's own native logs never print tokens.
 - **The web platform is not supported.** Every Adjust method rejects with `UNIMPLEMENTED` there.
 - **Device tests are pending.** No end-to-end test has run on a physical device or with real tokens: deferred links, Universal Links and App Links, cold and warm start, Adjust session tracking, the Android first-resume forwarding, ATT, SKAN, and purchase verification are all unverified.
 - **The iOS side has not been compiled.** The iOS plugin was developed on a Linux machine without the iOS SDK. The Swift files only passed a syntax parse, and the mapping unit tests ran on Linux. The Xcode build, including whether importing `Tapp`, `TappNetworking`, and `TappAdjust` together compiles without ambiguity, and the `xcodebuild` CI job are unverified. Whether the Adjust affiliate is active after `start()` on iOS (for example, `adjustGetSdkVersion` returning a value) is also unverified.
-- **Android native callbacks may never fire.** If the Adjust service is missing or the Adjust SDK throws locally, the native `Tapp-Adjust` adapter swallows the exception and never invokes the callback, so the related promise (for example `getAdjustAttribution`) can stay pending. This is native Tapp-Adjust behavior. The plugin's `NOT_STARTED` guard and input validation avoid the known paths, and it adds no timeout.
+- **Android native callbacks may never fire.** In Android `Tapp-Adjust`, `runAdjustCall` swallows local exceptions and the callback is skipped, and the adapter also returns without a callback when no Adjust service is resolved. The related promise (for example `getAdjustAttribution`) can then stay pending. This is native Tapp-Adjust behavior. The plugin's `NOT_STARTED` guard and input validation avoid the known paths, and it adds no timeout. Independently of the adapters, the Adjust SDK itself might not invoke a callback in some conditions on either platform; this has not been observed or tested.
 - **Android Adjust manifest entries are not inspected** (see Privacy), and the Adjust tracking question for the privacy manifest is open.
-- **iOS has no co-install guard** (see "Choose exactly one plugin"). The Android guard was checked in a CI-style host with both plugins installed; the iOS side was not tested.
+- **iOS has no co-install guard** (see "Choose exactly one plugin"). On 2026-11-07 the Android guard was run from the repo root with `CORE_DIR=/workspace/tapp/Tapp-Capacitor JAVA_HOME=<JDK 21> bash .github/ci/build-exclusive-install-host.sh` against tapp-capacitor-sdk at commit b439231 (local checkout): it built a Capacitor 8 host with both plugins, the Android build failed with "Install exactly one of tapp-capacitor-sdk or tapp-adjust-capacitor-sdk.", and the script reported PASS. The `exclusive-install` GitHub Actions job has not run yet. The iOS side was not tested.
 - **CocoaPods:** the Adjust pod version is not pinned (see Native SDK versions). A CocoaPods build of this plugin has not been run.
 - **No minified release test.** The Adjust adapter ships no Proguard rules and this plugin adds none for it. A minified release build with Adjust has not been tested.
 

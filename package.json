@@ -27,8 +27,7 @@
     "native",
     "deep linking",
     "attribution",
-    "tapp",
-    "adjust"
+    "tapp"
   ],
   "scripts": {
     "build": "npm run clean && tsc && rollup -c rollup.config.mjs",

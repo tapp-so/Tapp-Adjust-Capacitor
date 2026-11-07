@@ -157,6 +157,10 @@ internal object TappAdjustMapping {
         else -> Gate.PROCEED
     }
 
+    /** Core gate for calls that need a live Tapp instance: not started, or started with no instance (destroy window), is NOT_STARTED. */
+    fun coreGate(started: Boolean, hasInstance: Boolean): Gate =
+        if (started && hasInstance) Gate.PROCEED else Gate.NOT_STARTED
+
     fun unimplementedMessage(method: String) = "$method is not available on Android."
 
     // --- Input validation (raw JSON values from PluginCall.data) ---
@@ -194,7 +198,8 @@ internal object TappAdjustMapping {
             finite(purchaseTime) ?: return null
         }
         return PlayStoreSubscription(
-            p.toLong(), nonBlank(currency) ?: return null, nonBlank(sku) ?: return null,
+            p.toLong(), // price is in micro-units (e.g. 9.99 -> 9990000); fractional input is truncated toward zero
+            nonBlank(currency) ?: return null, nonBlank(sku) ?: return null,
             nonBlank(orderId) ?: return null, nonBlank(signature) ?: return null,
             nonBlank(purchaseToken) ?: return null, time?.toLong()
         )

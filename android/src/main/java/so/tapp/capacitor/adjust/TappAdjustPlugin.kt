@@ -163,7 +163,8 @@ class TappAdjustPlugin : Plugin() {
     private fun instance(): Tapp = tapp ?: Tapp(context.applicationContext).also { tapp = it }
 
     private fun requireStarted(call: PluginCall): Tapp? {
-        if (started) return tapp
+        val instance = tapp
+        if (TappAdjustMapping.coreGate(started, instance != null) == TappAdjustMapping.Gate.PROCEED) return instance
         call.reject(TappAdjustMapping.NOT_STARTED, "NOT_STARTED")
         return null
     }
