@@ -53,7 +53,7 @@ repositories {
 dependencies {
     implementation project(':capacitor-android')
     implementation 'com.github.tapp-so.Tapp-Android:Tapp-Adjust:1.1.6'
-    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.1'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.11.0'
     implementation "androidx.appcompat:appcompat:${rootProject.ext.has('androidxAppCompatVersion') ? rootProject.ext.androidxAppCompatVersion : '1.7.1'}"
     testImplementation 'junit:junit:4.13.2'
     testImplementation 'org.json:json:20250517'
