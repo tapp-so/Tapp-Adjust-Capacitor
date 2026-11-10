@@ -105,9 +105,9 @@ The plugin pins these native SDK versions:
 | iOS | `Tapp` | 1.1.23 | SPM `exact: "1.1.23"`; CocoaPods `= 1.1.23` |
 | iOS | `Tapp-Adjust` (SPM product `TappAdjust`) | 1.1.26 | SPM `exact: "1.1.26"`; CocoaPods `= 1.1.26` |
 | iOS | `Tapp-Networking` | 1.1.7 | SPM `exact: "1.1.7"`; CocoaPods `= 1.1.7` |
-| iOS (transitive, SPM) | Adjust `ios_sdk` | 5.0.1 | Pinned by `Tapp-Adjust-iOS` (`exact: "5.0.1"`); this plugin does not re-pin it |
-| iOS (transitive, SPM) | Adjust `adjust_signature_sdk` | not pinned by this plugin | Resolved 3.67.0 in a fresh resolve on 2026-11-06; Android uses `strictly 3.47.0`, so iOS and Android may run different signature SDK versions |
-| iOS (transitive, CocoaPods) | `Adjust` pod | not pinned | `Tapp-Adjust.podspec` declares `Adjust` without a version, and this plugin does not add a pin, so CocoaPods resolves it |
+| iOS | Adjust `ios_sdk` | 5.0.1 | SPM `exact: "5.0.1"` (direct); CocoaPods `Adjust = 5.0.1` |
+| iOS | Adjust `adjust_signature_sdk` | 3.47.0 | SPM `exact: "3.47.0"` (direct); within `ios_sdk` 5.0.1's `3.18.0..<4.0.0` range and equal to Android's `strictly 3.47.0` |
+| iOS (transitive, CocoaPods) | `AdjustSignature` pod | not pinned by this plugin | Resolves within `Adjust` 5.0.1's `~> 3.18` |
 | Android | `com.github.tapp-so.Tapp-Android:Tapp-Adjust` | 1.1.6 | Gradle `implementation` |
 | Android (transitive) | `com.github.tapp-so.Tapp-Android:Tapp-Core` | 1.1.6 | Pulled in by `Tapp-Adjust` |
 | Android (transitive) | `adjust-android` and `adjust-android-webbridge` | 5.0.0 | Pulled in by `Tapp-Adjust` |
@@ -117,9 +117,9 @@ The plugin pins these native SDK versions:
 Notes:
 
 - **Signature SDK pin.** `Tapp-Adjust` requires `adjust-android-signature` with `strictly 3.47.0`. If your app (or another library) depends on a different version of that artifact, Gradle dependency resolution can fail or conflict. Align your app with 3.47.0. The plugin does not override it.
-- **iOS signature SDK.** This plugin does not pin `adjust_signature_sdk` on iOS. A fresh Swift Package Manager resolve on 2026-11-06 picked 3.67.0, while Android uses `strictly 3.47.0`, so the two platforms may run different signature SDK versions.
+- **iOS signature SDK.** With Swift Package Manager the plugin pins `adjust_signature_sdk` to `exact: "3.47.0"`, matching Android's `strictly 3.47.0`. `ios_sdk` 5.0.1 accepts `3.18.0..<4.0.0`, so 3.47.0 satisfies it. An earlier unpinned resolve picked 3.67.0.
 - **Android coordinate case.** The core plugin uses `com.github.Tapp-so.Tapp-Android:Tapp-Native`. This plugin uses the lowercase `com.github.tapp-so.Tapp-Android:Tapp-Adjust`, which resolved on JitPack when it was checked.
-- **CocoaPods.** The `Adjust` pod version is not pinned by this plugin or by `Tapp-Adjust`. Prefer Swift Package Manager, where the Adjust `ios_sdk` version is pinned.
+- **CocoaPods.** The podspec pins `Adjust` to `= 5.0.1`. It does not pin the `AdjustSignature` pod, which resolves within `Adjust` 5.0.1's `~> 3.18`, so it can differ from the 3.47.0 used with Swift Package Manager and on Android. Prefer Swift Package Manager.
 
 ## Quick start
 
@@ -586,11 +586,20 @@ The plugin ships a `PrivacyInfo.xcprivacy` manifest that declares the data the b
 - **Product Interaction** — in-app events (analytics).
 - **Other Data Types** — device and app attributes used for the device match request (analytics, app functionality).
 
-None of these is declared as linked to the user or used for tracking. Apps must still reflect the collected data in their App Store privacy details and Google Play Data safety.
+None of these is declared as linked to the user or used for tracking (Tapp SDK data only; see the Adjust declarations below). Apps must still reflect the collected data in their App Store privacy details and Google Play Data safety.
 
-**The Adjust SDK collects its own data on top of this.** This plugin includes the Adjust SDK through the Tapp Adjust adapters, and the Adjust SDK sends its own data to Adjust. This README does not list it; consult Adjust's documentation. The same applies to the Adjust-related APIs the plugin exposes (advertising identifiers, App Tracking Transparency, SKAdNetwork, third-party sharing, and global partner parameters). The host app owns the App Store privacy details (including the App Tracking Transparency and `NSUserTrackingUsageDescription` decisions) and the Google Play Data safety form.
+**The Adjust SDK collects its own data on top of this.** This plugin includes the Adjust SDK through the Tapp Adjust adapters, and the Adjust SDK sends its own data to Adjust. This README lists only the iOS manifest declarations below; consult Adjust's documentation for the rest. The same applies to the Adjust-related APIs the plugin exposes (advertising identifiers, App Tracking Transparency, SKAdNetwork, third-party sharing, and global partner parameters). The host app owns the App Store privacy details (including the App Tracking Transparency and `NSUserTrackingUsageDescription` decisions) and the Google Play Data safety form.
 
-- **Baseline manifest.** The plugin's `PrivacyInfo.xcprivacy` is the same baseline as the core plugin's (above). It was not widened for Adjust. Whether the Adjust APIs require `NSPrivacyTracking` or tracking-domain entries is an **open question** (see the changelog); do not read the baseline as an answer.
+- **Plugin manifest scope.** The plugin's `PrivacyInfo.xcprivacy` covers only the data the bundled Tapp SDK sends, declared as not linked to the user and not used for tracking. This is a deliberate decision. It does not describe the Adjust SDK.
+- **Adjust iOS SDK manifest.** The bundled Adjust iOS SDK 5.0.1 ships its own `PrivacyInfo.xcprivacy` (source: `adjust/ios_sdk` v5.0.1, `Adjust/PrivacyInfo.xcprivacy`). It declares:
+  - `NSPrivacyTracking` true.
+  - Eight tracking domains: `https://consent.adjust.com`, `https://consent.adjust.io`, `https://consent.adjust.net.in`, `https://consent.adjust.world`, `https://consent.adjust.cn`, `https://consent.eu.adjust.com`, `https://consent.tr.adjust.com`, and `https://consent.us.adjust.com`.
+  - Device ID, linked to the user and used for tracking (analytics, third-party advertising).
+  - Product Interaction, not linked and not used for tracking (analytics).
+  - Required-reason APIs: UserDefaults (`CA92.1`) and File Timestamp (`C617.1`).
+- **Merged privacy report.** Xcode merges all bundled manifests into the app's privacy report, so your app's report shows tracking and a linked Device ID because of Adjust, whatever this plugin's manifest says.
+- **ATT and tracking domains.** On iOS 17+, per Apple's documented behavior for declared tracking domains, connections to them are blocked until the user grants App Tracking Transparency permission.
+- **App Store privacy answers.** Reflect Adjust's declarations and your own ATT choice in your App Store privacy answers. Do not copy only this plugin's "not linked, not tracking" wording into your App Store labels.
 - **Android manifest.** Manifest entries contributed by the Adjust AARs (permissions and other merged entries) have **not been inspected**. Check your merged manifest.
 
 ### Logging
@@ -624,9 +633,9 @@ The plugin's own native logs never print tokens.
 - **Device tests are pending.** No end-to-end test has run on a physical device or with real tokens: deferred links, Universal Links and App Links, cold and warm start, Adjust session tracking, the Android first-resume forwarding, ATT, SKAN, and purchase verification are all unverified.
 - **The iOS side has not been compiled.** The iOS plugin was developed on a Linux machine without the iOS SDK. The Swift files only passed a syntax parse, and the mapping unit tests ran on Linux. The Xcode build, including whether importing `Tapp`, `TappNetworking`, and `TappAdjust` together compiles without ambiguity, and the `xcodebuild` CI job are unverified. Whether the Adjust affiliate is active after `start()` on iOS (for example, `adjustGetSdkVersion` returning a value) is also unverified.
 - **Android native callbacks may never fire.** In Android `Tapp-Adjust`, `runAdjustCall` swallows local exceptions and the callback is skipped, and the adapter also returns without a callback when no Adjust service is resolved. The related promise (for example `getAdjustAttribution`) can then stay pending. This is native Tapp-Adjust behavior. The plugin's `NOT_STARTED` guard and input validation avoid the known paths, and it adds no timeout. Independently of the adapters, the Adjust SDK itself might not invoke a callback in some conditions on either platform; this has not been observed or tested.
-- **Android Adjust manifest entries are not inspected** (see Privacy), and the Adjust tracking question for the privacy manifest is open.
+- **Android Adjust manifest entries are not inspected** (see Privacy).
 - **iOS has no co-install guard** (see "Choose exactly one plugin"). On 2026-11-07 the Android guard was run from the repo root with `CORE_DIR=/workspace/tapp/Tapp-Capacitor JAVA_HOME=<JDK 21> bash .github/ci/build-exclusive-install-host.sh` against tapp-capacitor-sdk at commit b439231 (local checkout): it built a Capacitor 8 host with both plugins, the Android build failed with "Install exactly one of tapp-capacitor-sdk or tapp-adjust-capacitor-sdk.", and the script reported PASS. The `exclusive-install` GitHub Actions job has not run yet. The iOS side was not tested.
-- **CocoaPods:** the Adjust pod version is not pinned (see Native SDK versions). A CocoaPods build of this plugin has not been run.
+- **CocoaPods:** the podspec pins `Adjust = 5.0.1`, but the `AdjustSignature` pod floats within `~> 3.18` (see Native SDK versions). A CocoaPods build of this plugin has not been run.
 - **No minified release test.** The Adjust adapter ships no Proguard rules and this plugin adds none for it. A minified release build with Adjust has not been tested.
 
 ## License
