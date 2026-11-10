@@ -75,18 +75,33 @@ enum TappAdjustMapping {
         return string
     }
 
-    /// Accepts only real booleans; Swift casts can treat NSNumber(1) as Bool.
-    static func strictBool(_ value: Any?) -> Bool? {
-        if let number = value as? NSNumber {
-            return CFGetTypeID(number) == CFBooleanGetTypeID() ? number.boolValue : nil
-        }
-        return value as? Bool
+    // NSNumber bridging pitfall: Swift treats NSNumber(0) and NSNumber(1) as `is Bool` (and
+    // `as? Bool` succeeds), so a JSON number 0 or 1 delivered by the bridge would look like a
+    // boolean. Never use `is Bool` / `as? Bool` on a bridged value. Native Swift Bools are
+    // detected by exact type, and NSNumbers are booleans only when they are CFBoolean.
+
+    /// Unwraps an optional stored in `Any?` so the dynamic type is the payload's.
+    private static func unwrapped(_ value: Any?) -> Any? {
+        guard let value else { return nil }
+        return value
     }
 
-    /// Accepts finite numbers and rejects booleans.
+    private static func isCFBoolean(_ number: NSNumber) -> Bool {
+        CFGetTypeID(number) == CFBooleanGetTypeID()
+    }
+
+    /// Accepts only real booleans: a native Swift Bool or a CFBoolean NSNumber.
+    static func strictBool(_ value: Any?) -> Bool? {
+        guard let value = unwrapped(value) else { return nil }
+        if type(of: value) == Bool.self { return value as? Bool }
+        if let number = value as? NSNumber, isCFBoolean(number) { return number.boolValue }
+        return nil
+    }
+
+    /// Accepts finite numbers (native or NSNumber) and rejects real booleans.
     static func finiteNumber(_ value: Any?) -> Double? {
-        guard !(value is Bool), let number = value as? NSNumber,
-              CFGetTypeID(number) != CFBooleanGetTypeID() else { return nil }
+        guard let value = unwrapped(value), type(of: value) != Bool.self,
+              let number = value as? NSNumber, !isCFBoolean(number) else { return nil }
         let double = number.doubleValue
         return double.isFinite ? double : nil
     }

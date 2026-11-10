@@ -369,4 +369,101 @@ final class TappAdjustMappingTests: XCTestCase {
         XCTAssertNil(TappAdjustMapping.strictBool("true"))
         XCTAssertNil(TappAdjustMapping.strictBool(nil))
     }
+
+    // MARK: - Bridge-shaped values (JSON -> NSNumber, as Capacitor delivers them)
+
+    private func jsonOptions(_ json: String) throws -> [String: Any] {
+        let object = try JSONSerialization.jsonObject(with: Data(json.utf8))
+        return try XCTUnwrap(object as? [String: Any])
+    }
+
+    private func jsonReader(_ json: String) throws -> TappAdjustMapping.Reader {
+        reader(try jsonOptions(json))
+    }
+
+    /// Mirrors Capacitor's `getValue`: the value is held as an `any JSValue` existential and
+    /// handed to the mapping as `Any?`.
+    private func existentialReader(_ json: String) throws -> TappAdjustMapping.Reader {
+        let options = try jsonOptions(json)
+        var wrapped: [String: any JSValueLike] = [:]
+        for (key, value) in options {
+            if let value = value as? any JSValueLike { wrapped[key] = value }
+        }
+        return { key in wrapped[key] as Any? }
+    }
+
+    private func bothReaders(_ json: String) throws -> [TappAdjustMapping.Reader] {
+        [try jsonReader(json), try existentialReader(json)]
+    }
+
+    func testSkanZeroAndOneFromJSONAreAccepted() throws {
+        for read in try bothReaders(#"{"value":0,"lockWindow":1,"coarseValue":"low"}"#) {
+            let result = try XCTUnwrap(TappAdjustMapping.skanConversionValue(read))
+            XCTAssertEqual(result.value, 0)
+            XCTAssertEqual(result.coarseValue, "low")
+            XCTAssertEqual(result.lockWindow?.intValue, 1)
+        }
+        for read in try bothReaders(#"{"value":1}"#) {
+            XCTAssertEqual(TappAdjustMapping.skanConversionValue(read)?.value, 1)
+        }
+        for read in try bothReaders(#"{"value":0,"lockWindow":0}"#) {
+            XCTAssertEqual(TappAdjustMapping.skanConversionValue(read)?.lockWindow?.intValue, 0)
+        }
+        for read in try bothReaders(#"{"value":63,"lockWindow":true}"#) {
+            let result = try XCTUnwrap(TappAdjustMapping.skanConversionValue(read))
+            XCTAssertEqual(result.value, 63)
+            XCTAssertEqual(result.lockWindow?.boolValue, true)
+        }
+        for read in try bothReaders(#"{"value":5,"lockWindow":false}"#) {
+            XCTAssertEqual(TappAdjustMapping.skanConversionValue(read)?.lockWindow?.boolValue, false)
+        }
+    }
+
+    func testSkanInvalidJSONIsStillRejected() throws {
+        let invalid = [
+            #"{"value":1.5}"#, #"{"value":true}"#, #"{"value":false}"#, #"{"value":"1"}"#,
+            #"{"value":1,"lockWindow":"x"}"#, #"{"value":1,"coarseValue":1}"#,
+            #"{"value":1,"coarseValue":" "}"#, #"{}"#
+        ]
+        for json in invalid {
+            for read in try bothReaders(json) {
+                XCTAssertNil(TappAdjustMapping.skanConversionValue(read), json)
+            }
+        }
+    }
+
+    func testRevenueAndPriceZeroAndOneFromJSON() throws {
+        for (json, expected) in [(#"{"source":"s","revenue":0,"currency":"USD"}"#, 0.0),
+                                 (#"{"source":"s","revenue":1,"currency":"USD"}"#, 1.0)] {
+            for read in try bothReaders(json) {
+                XCTAssertEqual(TappAdjustMapping.adRevenue(read)?.revenue, expected, json)
+            }
+        }
+        for read in try bothReaders(#"{"source":"s","revenue":true,"currency":"USD"}"#) {
+            XCTAssertNil(TappAdjustMapping.adRevenue(read))
+        }
+        for read in try bothReaders(#"{"price":1,"currency":"USD","transactionId":"t"}"#) {
+            XCTAssertEqual(TappAdjustMapping.appStoreSubscription(read)?.price, NSDecimalNumber(string: "1"))
+        }
+    }
+
+    func testStrictBoolOnJSONValues() throws {
+        let options = try jsonOptions(#"{"t":true,"f":false,"one":1,"zero":0}"#)
+        XCTAssertEqual(TappAdjustMapping.strictBool(options["t"]), true)
+        XCTAssertEqual(TappAdjustMapping.strictBool(options["f"]), false)
+        XCTAssertNil(TappAdjustMapping.strictBool(options["one"]))
+        XCTAssertNil(TappAdjustMapping.strictBool(options["zero"]))
+        XCTAssertNil(TappAdjustMapping.finiteNumber(options["t"]))
+        XCTAssertNil(TappAdjustMapping.finiteNumber(options["f"]))
+        XCTAssertEqual(TappAdjustMapping.finiteNumber(options["one"]), 1)
+        XCTAssertEqual(TappAdjustMapping.finiteNumber(options["zero"]), 0)
+        XCTAssertEqual(TappAdjustMapping.integer(options["one"]), 1)
+        XCTAssertEqual(TappAdjustMapping.integer(options["zero"]), 0)
+    }
 }
+
+/// Test-local stand-in for Capacitor's `JSValue` protocol.
+protocol JSValueLike {}
+extension NSNumber: JSValueLike {}
+extension String: JSValueLike {}
+extension NSNull: JSValueLike {}
