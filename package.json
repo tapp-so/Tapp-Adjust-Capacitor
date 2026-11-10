@@ -31,7 +31,8 @@
   ],
   "publishConfig": {
     "tag": "alpha",
-    "provenance": true
+    "provenance": true,
+    "access": "public"
   },
   "scripts": {
     "build": "npm run clean && tsc && rollup -c rollup.config.mjs",

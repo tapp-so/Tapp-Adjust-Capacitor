@@ -1,7 +1,8 @@
 name: Publish
 
 # Manual release only. iOS is covered by ci.yml on macOS and the iOS CI caveat
-# still applies: ci.yml must be green (including iOS) before releasing.
+# still applies: ci.yml must be green (including iOS) before releasing. This
+# workflow has no iOS job.
 on:
   workflow_dispatch:
     inputs:
@@ -20,27 +21,61 @@ concurrency:
 
 jobs:
   publish:
+    if: github.ref == 'refs/heads/main'
+    environment: npm-publish
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
       contents: read
       id-token: write # npm provenance (OIDC)
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: '22'
           registry-url: 'https://registry.npmjs.org'
-          cache: npm
-      - name: Require a prerelease version
+          package-manager-cache: false
+      # Needed later for trusted publishing with a dist-tag (OIDC needs npm
+      # >= 11.21.0; Node 22 ships 10.9.9). It also works with token auth.
+      - name: Use npm 11.21.0
+        run: |
+          npm install -g npm@11.21.0
+          npm --version
+      - name: Require a prerelease matching the publish tag
         run: |
           node -e '
-          const version = require("./package.json").version;
-          console.log("package.json version: " + version);
-          if (!version.includes("-")) {
+          const pkg = require("./package.json");
+          const version = pkg.version;
+          const tag = pkg.publishConfig && pkg.publishConfig.tag;
+          const num = "(0|[1-9]\\d*)";
+          const ident = "(?:0|[1-9]\\d*|\\d*[A-Za-z-][0-9A-Za-z-]*)";
+          const re = new RegExp(
+            "^" + num + "\\." + num + "\\." + num +
+            "(?:-(" + ident + "(?:\\." + ident + ")*))?" +
+            "(?:\\+[0-9A-Za-z-]+(?:\\.[0-9A-Za-z-]+)*)?$"
+          );
+          const m = re.exec(String(version));
+          if (!m) {
+            console.error("Refusing to publish: " + JSON.stringify(version) + " is not a valid SemVer 2.0 version.");
+            process.exit(1);
+          }
+          const prerelease = m[4];
+          console.log("version: " + version);
+          console.log("prerelease: " + (prerelease || "(none)"));
+          console.log("publishConfig.tag: " + (tag || "(missing)"));
+          if (!prerelease) {
             console.error("Refusing to publish: " + version + " is not a prerelease version (expected something like 0.1.0-alpha.0).");
+            process.exit(1);
+          }
+          if (!tag) {
+            console.error("Refusing to publish: publishConfig.tag is missing in package.json.");
+            process.exit(1);
+          }
+          const first = prerelease.split(".")[0];
+          if (first !== tag) {
+            console.error("Refusing to publish: first prerelease identifier \"" + first + "\" does not match publishConfig.tag \"" + tag + "\".");
             process.exit(1);
           }
           '
@@ -48,18 +83,18 @@ jobs:
       - run: npm run lint
       - run: npm run typecheck
       - run: npm test
+      # tag, provenance and access come from publishConfig in package.json:
+      # no --tag, --provenance or --access flags are passed on the CLI.
+      - name: Publish (dry run)
+        if: ${{ inputs.dry_run }}
+        # The log may say "Publishing ... with tag latest"; that is cosmetic.
+        # The real publish uses publishConfig.tag.
+        run: npm publish --dry-run
       - name: Publish to npm
-        shell: bash
+        if: ${{ !inputs.dry_run }}
         env:
-          # The first publish needs the NPM_TOKEN secret (a granular automation token with
-          # publish rights). npm trusted publishing (OIDC) can only be configured once the
-          # package exists on npm; after that this token and line can be removed.
+          # The first publish needs the NPM_TOKEN secret (environment secret in
+          # npm-publish). npm trusted publishing (OIDC) can only be configured once
+          # the package exists on npm; after that this token line can be removed.
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-          DRY_RUN: ${{ inputs.dry_run }}
-        # No --tag or --provenance here: publishConfig in package.json supplies both.
-        run: |
-          if [ "$DRY_RUN" = "true" ]; then
-            npm publish --dry-run
-          else
-            npm publish
-          fi
+        run: npm publish
