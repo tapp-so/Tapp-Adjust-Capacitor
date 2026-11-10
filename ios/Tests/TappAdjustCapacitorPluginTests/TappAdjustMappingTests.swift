@@ -1,6 +1,7 @@
 import XCTest
 import CoreFoundation
-#if canImport(Capacitor)
+#if !os(Linux)
+// On Apple platforms Capacitor is a declared test dependency and must import (a missing dependency fails the build); Linux has no Capacitor binary, so the real-Capacitor reader is compiled out there and the Capacitor-style mirror covers it.
 import Capacitor
 #endif
 @testable import TappAdjustCapacitorPlugin
@@ -434,7 +435,7 @@ final class TappAdjustMappingTests: XCTestCase {
         try existentialReader(jsonDictionary(json))
     }
 
-    #if canImport(Capacitor)
+    #if !os(Linux)
     private func capacitorReader(_ options: NSDictionary) throws -> TappAdjustMapping.Reader {
         let obj = try XCTUnwrap(JSTypes.coerceDictionaryToJSObject(options))
         XCTAssertEqual(obj.count, options.count, "Capacitor must preserve every test option")
@@ -465,7 +466,7 @@ final class TappAdjustMappingTests: XCTestCase {
 
     private func bridgeReaders(_ json: String) throws -> [TappAdjustMapping.Reader] {
         var readers = [try jsonReader(json), try existentialReader(json)]
-        #if canImport(Capacitor)
+        #if !os(Linux)
         readers.append(try capacitorReader(jsonDictionary(json)))
         #endif
         return readers
@@ -510,7 +511,7 @@ final class TappAdjustMappingTests: XCTestCase {
             var readers: [TappAdjustMapping.Reader] = [
                 { options[$0] }, try existentialReader(options)
             ]
-            #if canImport(Capacitor)
+            #if !os(Linux)
             readers.append(try capacitorReader(options))
             #endif
             for read in readers {

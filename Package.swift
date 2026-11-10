@@ -39,7 +39,8 @@ let package = Package(
     ) ? [
         .testTarget(
             name: "TappAdjustCapacitorPluginTests",
-            dependencies: ["TappAdjustCapacitorPlugin"],
+            // Tests read values through Capacitor's real JSTypes coercion.
+            dependencies: ["TappAdjustCapacitorPlugin", .product(name: "Capacitor", package: "capacitor-swift-pm")],
             path: "ios/Tests/TappAdjustCapacitorPluginTests"
         )
     ] : [])
