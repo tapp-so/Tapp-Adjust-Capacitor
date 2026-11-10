@@ -1,0 +1,65 @@
+name: Publish
+
+# Manual release only. iOS is covered by ci.yml on macOS and the iOS CI caveat
+# still applies: ci.yml must be green (including iOS) before releasing.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run: run npm publish --dry-run and publish nothing'
+        type: boolean
+        required: false
+        default: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: publish-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      id-token: write # npm provenance (OIDC)
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '22'
+          registry-url: 'https://registry.npmjs.org'
+          cache: npm
+      - name: Require a prerelease version
+        run: |
+          node -e '
+          const version = require("./package.json").version;
+          console.log("package.json version: " + version);
+          if (!version.includes("-")) {
+            console.error("Refusing to publish: " + version + " is not a prerelease version (expected something like 0.1.0-alpha.0).");
+            process.exit(1);
+          }
+          '
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - name: Publish to npm
+        shell: bash
+        env:
+          # The first publish needs the NPM_TOKEN secret (a granular automation token with
+          # publish rights). npm trusted publishing (OIDC) can only be configured once the
+          # package exists on npm; after that this token and line can be removed.
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        # No --tag or --provenance here: publishConfig in package.json supplies both.
+        run: |
+          if [ "$DRY_RUN" = "true" ]; then
+            npm publish --dry-run
+          else
+            npm publish
+          fi
