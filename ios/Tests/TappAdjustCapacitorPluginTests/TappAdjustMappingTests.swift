@@ -1,5 +1,8 @@
 import XCTest
 import CoreFoundation
+#if canImport(Capacitor)
+import Capacitor
+#endif
 @testable import TappAdjustCapacitorPlugin
 
 final class TappAdjustMappingTests: XCTestCase {
@@ -381,40 +384,181 @@ final class TappAdjustMappingTests: XCTestCase {
         reader(try jsonOptions(json))
     }
 
-    /// Mirrors Capacitor's `getValue`: the value is held as an `any JSValue` existential and
-    /// handed to the mapping as `Any?`.
-    private func existentialReader(_ json: String) throws -> TappAdjustMapping.Reader {
-        let options = try jsonOptions(json)
-        var wrapped: [String: any JSValueLike] = [:]
-        for (key, value) in options {
-            if let value = value as? any JSValueLike { wrapped[key] = value }
+    private func jsonDictionary(_ json: String) throws -> NSDictionary {
+        try XCTUnwrap(JSONSerialization.jsonObject(with: Data(json.utf8)) as? NSDictionary)
+    }
+
+    private enum CoercionError: Error {
+        case unsupportedValue, nonStringKey
+    }
+
+    /// Mirrors Capacitor's coerceToJSValue with its default (unformatted) Date handling.
+    /// A cast to JSValueLike alone does not bridge Darwin NSString to conforming String.
+    /// Unlike the production coercer, fail the test if any input would be discarded.
+    private func coerceToJSValue(_ value: Any) throws -> any JSValueLike {
+        switch value {
+        case let string as String: return string
+        case let number as NSNumber: return number
+        case let bool as Bool: return bool
+        case let int as Int: return int
+        case let float as Float: return float
+        case let double as Double: return double
+        case let date as Date: return date
+        case let null as NSNull: return null
+        case let array as NSArray:
+            return try array.map { try coerceToJSValue($0) }
+        case let dictionary as NSDictionary:
+            var result: [String: any JSValueLike] = [:]
+            for rawKey in dictionary.allKeys {
+                guard let key = rawKey as? String else {
+                    XCTFail("Cannot coerce a dictionary key of type \(type(of: rawKey))")
+                    throw CoercionError.nonStringKey
+                }
+                result[key] = try coerceToJSValue(try XCTUnwrap(dictionary[key]))
+            }
+            return result
+        default:
+            XCTFail("Cannot coerce a value of type \(type(of: value))")
+            throw CoercionError.unsupportedValue
         }
+    }
+
+    /// Mirrors Capacitor's `getValue`: explicitly coerce first, then hand the existential
+    /// to the mapping as `Any?`, exactly as the plugin does.
+    private func existentialReader(_ options: NSDictionary) throws -> TappAdjustMapping.Reader {
+        let wrapped = try XCTUnwrap(coerceToJSValue(options) as? [String: any JSValueLike])
         return { key in wrapped[key] as Any? }
     }
 
-    private func bothReaders(_ json: String) throws -> [TappAdjustMapping.Reader] {
-        [try jsonReader(json), try existentialReader(json)]
+    private func existentialReader(_ json: String) throws -> TappAdjustMapping.Reader {
+        try existentialReader(jsonDictionary(json))
+    }
+
+    #if canImport(Capacitor)
+    private func capacitorReader(_ options: NSDictionary) throws -> TappAdjustMapping.Reader {
+        let obj = try XCTUnwrap(JSTypes.coerceDictionaryToJSObject(options))
+        XCTAssertEqual(obj.count, options.count, "Capacitor must preserve every test option")
+        return { key in obj[key] as Any? }
+    }
+
+    func testCapacitorCoercionPreservesJSONStringsNumbersAndBooleans() throws {
+        let read = try capacitorReader(jsonDictionary(
+            #"{"coarseValue":"low","blank":" ","invalid":"x","t":true,"f":false,"one":1,"zero":0}"#
+        ))
+        XCTAssertTrue(type(of: try XCTUnwrap(read("coarseValue"))) == String.self)
+        XCTAssertEqual(read("coarseValue") as? String, "low")
+        XCTAssertEqual(read("blank") as? String, " ")
+        XCTAssertEqual(read("invalid") as? String, "x")
+        XCTAssertEqual(TappAdjustMapping.strictBool(read("t")), true)
+        XCTAssertEqual(TappAdjustMapping.strictBool(read("f")), false)
+        for key in ["t", "f"] {
+            XCTAssertNil(TappAdjustMapping.finiteNumber(read(key)))
+            XCTAssertNil(TappAdjustMapping.integer(read(key)))
+        }
+        for (key, expected) in [("zero", 0), ("one", 1)] {
+            XCTAssertNil(TappAdjustMapping.strictBool(read(key)))
+            XCTAssertEqual(TappAdjustMapping.finiteNumber(read(key)), Double(expected))
+            XCTAssertEqual(TappAdjustMapping.integer(read(key)), expected)
+        }
+    }
+    #endif
+
+    private func bridgeReaders(_ json: String) throws -> [TappAdjustMapping.Reader] {
+        var readers = [try jsonReader(json), try existentialReader(json)]
+        #if canImport(Capacitor)
+        readers.append(try capacitorReader(jsonDictionary(json)))
+        #endif
+        return readers
+    }
+
+    func testExplicitNSNumberBooleansAndNumbers() {
+        for (value, expected) in [(NSNumber(value: true), true), (NSNumber(value: false), false)] {
+            XCTAssertEqual(TappAdjustMapping.strictBool(value), expected)
+            XCTAssertNil(TappAdjustMapping.finiteNumber(value))
+            XCTAssertNil(TappAdjustMapping.integer(value))
+        }
+        for expected in [0, 1] {
+            let value = NSNumber(value: expected)
+            XCTAssertNil(TappAdjustMapping.strictBool(value))
+            XCTAssertEqual(TappAdjustMapping.finiteNumber(value), Double(expected))
+            XCTAssertEqual(TappAdjustMapping.integer(value), expected)
+        }
+    }
+
+    #if canImport(Darwin)
+    func testExplicitCFBooleanValues() {
+        for (value, expected) in [(kCFBooleanTrue as NSNumber, true), (kCFBooleanFalse as NSNumber, false)] {
+            let erased: Any = value
+            XCTAssertFalse(type(of: erased) == Bool.self)
+            XCTAssertEqual(CFGetTypeID(value), CFBooleanGetTypeID())
+            XCTAssertEqual(TappAdjustMapping.strictBool(erased), expected)
+            XCTAssertNil(TappAdjustMapping.finiteNumber(erased))
+            XCTAssertNil(TappAdjustMapping.integer(erased))
+        }
+        XCTAssertNotEqual(CFGetTypeID(NSNumber(value: 0)), CFBooleanGetTypeID())
+        XCTAssertNotEqual(CFGetTypeID(NSNumber(value: 1)), CFBooleanGetTypeID())
+    }
+    #endif
+
+    func testExplicitNSStringValuesArePreservedAndValidated() throws {
+        for (key, value, valid) in [
+            ("coarseValue", NSString(string: "low"), true),
+            ("coarseValue", NSString(string: " "), false),
+            ("lockWindow", NSString(string: "x"), false)
+        ] {
+            let options: NSDictionary = ["value": NSNumber(value: 1), key: value]
+            var readers: [TappAdjustMapping.Reader] = [
+                { options[$0] }, try existentialReader(options)
+            ]
+            #if canImport(Capacitor)
+            readers.append(try capacitorReader(options))
+            #endif
+            for read in readers {
+                XCTAssertNotNil(read(key), "A present NSString must never disappear")
+                XCTAssertEqual(read(key) as? String, value as String)
+                let result = TappAdjustMapping.skanConversionValue(read)
+                if valid {
+                    XCTAssertEqual(try XCTUnwrap(result).coarseValue, "low")
+                } else {
+                    XCTAssertNil(result, "Reject invalid present values rather than treating them as absent")
+                }
+            }
+        }
+    }
+
+    func testExistentialCoercionPreservesNestedJSONValues() throws {
+        let read = try existentialReader(#"{"array":["low",1,true,null],"object":{"text":"x","null":null}}"#)
+        let array = try XCTUnwrap(read("array") as? [any JSValueLike])
+        XCTAssertEqual(array.count, 4)
+        XCTAssertEqual(array[0] as? String, "low")
+        XCTAssertEqual(TappAdjustMapping.integer(array[1]), 1)
+        XCTAssertEqual(TappAdjustMapping.strictBool(array[2]), true)
+        XCTAssertTrue(array[3] is NSNull)
+        let object = try XCTUnwrap(read("object") as? [String: any JSValueLike])
+        XCTAssertEqual(Set(object.keys), ["text", "null"])
+        XCTAssertEqual(object["text"] as? String, "x")
+        XCTAssertTrue(object["null"] is NSNull)
     }
 
     func testSkanZeroAndOneFromJSONAreAccepted() throws {
-        for read in try bothReaders(#"{"value":0,"lockWindow":1,"coarseValue":"low"}"#) {
+        for read in try bridgeReaders(#"{"value":0,"lockWindow":1,"coarseValue":"low"}"#) {
             let result = try XCTUnwrap(TappAdjustMapping.skanConversionValue(read))
             XCTAssertEqual(result.value, 0)
             XCTAssertEqual(result.coarseValue, "low")
             XCTAssertEqual(result.lockWindow?.intValue, 1)
         }
-        for read in try bothReaders(#"{"value":1}"#) {
+        for read in try bridgeReaders(#"{"value":1}"#) {
             XCTAssertEqual(TappAdjustMapping.skanConversionValue(read)?.value, 1)
         }
-        for read in try bothReaders(#"{"value":0,"lockWindow":0}"#) {
+        for read in try bridgeReaders(#"{"value":0,"lockWindow":0}"#) {
             XCTAssertEqual(TappAdjustMapping.skanConversionValue(read)?.lockWindow?.intValue, 0)
         }
-        for read in try bothReaders(#"{"value":63,"lockWindow":true}"#) {
+        for read in try bridgeReaders(#"{"value":63,"lockWindow":true}"#) {
             let result = try XCTUnwrap(TappAdjustMapping.skanConversionValue(read))
             XCTAssertEqual(result.value, 63)
             XCTAssertEqual(result.lockWindow?.boolValue, true)
         }
-        for read in try bothReaders(#"{"value":5,"lockWindow":false}"#) {
+        for read in try bridgeReaders(#"{"value":5,"lockWindow":false}"#) {
             XCTAssertEqual(TappAdjustMapping.skanConversionValue(read)?.lockWindow?.boolValue, false)
         }
     }
@@ -426,7 +570,7 @@ final class TappAdjustMappingTests: XCTestCase {
             #"{"value":1,"coarseValue":" "}"#, #"{}"#
         ]
         for json in invalid {
-            for read in try bothReaders(json) {
+            for read in try bridgeReaders(json) {
                 XCTAssertNil(TappAdjustMapping.skanConversionValue(read), json)
             }
         }
@@ -435,15 +579,18 @@ final class TappAdjustMappingTests: XCTestCase {
     func testRevenueAndPriceZeroAndOneFromJSON() throws {
         for (json, expected) in [(#"{"source":"s","revenue":0,"currency":"USD"}"#, 0.0),
                                  (#"{"source":"s","revenue":1,"currency":"USD"}"#, 1.0)] {
-            for read in try bothReaders(json) {
+            for read in try bridgeReaders(json) {
                 XCTAssertEqual(TappAdjustMapping.adRevenue(read)?.revenue, expected, json)
             }
         }
-        for read in try bothReaders(#"{"source":"s","revenue":true,"currency":"USD"}"#) {
+        for read in try bridgeReaders(#"{"source":"s","revenue":true,"currency":"USD"}"#) {
             XCTAssertNil(TappAdjustMapping.adRevenue(read))
         }
-        for read in try bothReaders(#"{"price":1,"currency":"USD","transactionId":"t"}"#) {
+        for read in try bridgeReaders(#"{"price":1,"currency":"USD","transactionId":"t"}"#) {
             XCTAssertEqual(TappAdjustMapping.appStoreSubscription(read)?.price, NSDecimalNumber(string: "1"))
+        }
+        for read in try bridgeReaders(#"{"price":0,"currency":"USD","transactionId":"t"}"#) {
+            XCTAssertEqual(TappAdjustMapping.appStoreSubscription(read)?.price, NSDecimalNumber(string: "0"))
         }
     }
 
@@ -467,3 +614,10 @@ protocol JSValueLike {}
 extension NSNumber: JSValueLike {}
 extension String: JSValueLike {}
 extension NSNull: JSValueLike {}
+extension Bool: JSValueLike {}
+extension Int: JSValueLike {}
+extension Float: JSValueLike {}
+extension Double: JSValueLike {}
+extension Date: JSValueLike {}
+extension Array: JSValueLike {}
+extension Dictionary: JSValueLike where Key == String, Value == any JSValueLike {}
