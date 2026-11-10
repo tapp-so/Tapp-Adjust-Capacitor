@@ -29,6 +29,10 @@
     "attribution",
     "tapp"
   ],
+  "publishConfig": {
+    "tag": "alpha",
+    "provenance": true
+  },
   "scripts": {
     "build": "npm run clean && tsc && rollup -c rollup.config.mjs",
     "clean": "rimraf ./dist",
@@ -39,7 +43,7 @@
     "verify:android": "cd android && ./gradlew clean build test && cd ..",
     "verify:ios": "xcodebuild -scheme TappAdjustCapacitorSdk -destination generic/platform=iOS",
     "verify": "npm run verify:ios && npm run verify:android && npm run build",
-    "prepublishOnly": "npm run build"
+    "prepack": "npm run build"
   },
   "peerDependencies": {
     "@capacitor/core": ">=6.0.0 <9.0.0"
