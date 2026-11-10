@@ -1,69 +1,112 @@
 # Releasing
 
-`tapp-adjust-capacitor-sdk` is published manually from GitHub Actions with the
-**Publish** workflow (`.github/workflows/publish.yml`).
+The first version of `tapp-adjust-capacitor-sdk`, `0.1.0-alpha.0`, is published
+manually by a maintainer. Every later version is published only from the
+**Publish** workflow with npm trusted publishing (OIDC), with no npm token anywhere.
+The repository is `tapp-so/Tapp-Adjust-Capacitor`.
 
-## Prerequisites
+## Prerequisites for any release
 
-- `package.json` version must be a prerelease whose first prerelease identifier
-  equals `publishConfig.tag` (`alpha`), for example `0.1.0-alpha.0`. The
-  workflow refuses anything else: `0.1.0` and `0.1.0-beta.0` both fail.
-- CI (`ci.yml`) must be green on `main`, including the iOS job. The Publish
-  workflow only runs lint, typecheck and tests on Linux; it does not build or
-  test iOS or Android.
-- The workflow only runs from `main`.
+- The version must be a prerelease whose first identifier equals
+  `publishConfig.tag` (`alpha`), for example `0.1.0-alpha.0`.
+- CI (`ci.yml`) must be green on `main`, including iOS. The Publish workflow
+  runs lint, typecheck and tests on Linux; it has no iOS job.
+- The workflow only runs from `main`. Never publish from another branch.
+- Create the GitHub environment `npm-publish` with Nick as required reviewer.
+  Optionally limit its deployment branches to `main`.
+- No `NPM_TOKEN` secret is needed or used. Remove any existing `NPM_TOKEN` secret.
 
-## One-time setup
+## Step 1: First publish (manual, once)
 
-1. Create a GitHub environment named `npm-publish` (Settings > Environments)
-   with Nick as required reviewer. Optionally restrict deployment branches to
-   `main`.
-2. Add `NPM_TOKEN` as an **environment** secret of `npm-publish`, not as a
-   repository secret. Use an npm granular access token with read and write
-   permission.
-3. A token scoped to this package may not be possible before the package
-   exists. For the first publish, use a token scoped to all packages with a
-   short expiry, then narrow it to this package (or replace it with trusted
-   publishing, below) afterwards.
+Use an up-to-date `main` checkout and npm 11.21.0. Log in with 2FA, install
+dependencies, check the file list, then publish:
 
-## Why `publishConfig` has `access: public`
+```sh
+git switch main && git pull --ff-only
+npm install -g npm@11.21.0
+npm login
+npm ci
+npm publish --dry-run --provenance=false
+npm publish --provenance=false
+npm view tapp-adjust-capacitor-sdk dist-tags
+```
 
-A first-time provenance publish of a new package fails ("Can't generate
-provenance for new or private package, you must set access to public") unless
-`access` is `public`. `npm publish --dry-run` skips that code path, so a dry
-run does not catch the problem.
+The real publish prompts for the 2FA code. `prepack` builds `dist`; the `alpha`
+tag and public access come from `publishConfig`. The log may say "tag latest";
+check the dist-tags with the final command above.
 
-## Release
+`publishConfig.provenance` is true, and provenance can only be generated in CI,
+so a local publish without `--provenance=false` fails. The CLI flag overrides
+`publishConfig` (verified with npm 11.21.0). The environment variable
+`NPM_CONFIG_PROVENANCE=false` does not override `publishConfig`, so use the flag.
+Alternatively, temporarily editing `publishConfig` works but leaves a local
+change; do not commit it. A dry run skips provenance generation, so it cannot
+catch the missing flag on a real publish.
 
-1. Open the Actions tab, choose **Publish**, and click **Run workflow** on
-   `main` with **dry_run checked** (the default). Approve the `npm-publish`
-   environment and read the file list printed by `npm publish --dry-run`;
-   check that only the expected files are included. The log may say
-   "Publishing ... with tag latest". That is expected: the real publish uses
-   the `alpha` tag from `publishConfig`.
-2. Run the workflow again with **dry_run unchecked** and approve. This
-   publishes to npm under the `alpha` dist-tag with provenance. Tag,
-   provenance and access all come from `publishConfig`, so the workflow passes
-   no `--tag`, `--provenance` or `--access` flags.
-3. Creating a git tag / GitHub release is manual; the workflow does not do it.
+This first version has no provenance statement. Later CI versions do.
+
+## Step 2: Link the trusted publisher (npmjs.com)
+
+The package must exist first. Only create the configuration when the next
+version is ready to go out from CI: its first successful publish must complete
+within 2 days or the configuration expires. If it expires, delete it, create
+a new one, and publish within 2 days.
+
+Open the package's **Settings** > **Trusted Publisher**. Under **Select your
+publisher**, click **GitHub Actions** and enter:
+
+- **Organization or user:** `tapp-so`
+- **Repository:** `Tapp-Adjust-Capacitor`
+- **Workflow filename:** `publish.yml` (filename only; it exists in `.github/workflows/`)
+- **Environment name:** `npm-publish`
+- **Allowed actions:** allow `npm publish`, because this workflow runs
+  `npm publish`. `npm stage publish` is always allowed. Leave **Allow npm dist-tag**
+  off unless needed.
+
+Fields are case-sensitive and are not verified when saved. New configurations
+default to allowing only `npm stage publish`, so explicitly allow `npm publish`.
+Trusted publishing needs Node >= 22.14.0 and npm >= 11.5.1; publishing with a
+dist-tag over OIDC needs npm >= 11.21.0. The workflow installs npm 11.21.0 and
+checks both minimum versions.
+
+## Step 3: First CI release via trusted publishing
+
+1. Bump the version on `main` through a reviewed PR. Keep the `alpha` prerelease
+   identifier and wait for all CI checks, including iOS, to pass.
+2. In Actions, run **Publish** on `main` with **dry_run checked** (the default).
+   Approve the `npm-publish` environment and read the file list.
+   A dry run does not validate the trusted publisher.
+3. Run **Publish** again with **dry_run unchecked** and approve the environment.
+   This first successful CI `npm publish` via trusted publishing must complete
+   within the 2-day window after linking the trusted publisher.
+
+## Step 4: Lock down publishing access
+
+After the first trusted-publishing release from the **Publish** workflow has
+succeeded, open package **Settings** > **Publishing access**, select
+**Require two-factor authentication and disallow tokens**, then click
+**Update Package Settings**.
+Trusted publishing keeps working through OIDC. Manual publishes still need 2FA;
+use them only for the first version as described above.
+
+## Later releases (CI only)
+
+1. Bump the version on `main` through a reviewed PR. Keep the `alpha` prerelease
+   identifier and wait for all CI checks, including iOS, to pass.
+2. In Actions, run **Publish** on `main` with **dry_run checked** (the default).
+   Approve the `npm-publish` environment and read the file list.
+3. Run **Publish** again with **dry_run unchecked** and approve the environment.
+   The workflow refuses versions already on npm and non-matching prereleases;
+   unexpected npm lookup errors also stop the release.
+4. Creating a git tag or GitHub release is manual.
+
+Provenance is generated automatically for trusted publishing from GitHub Actions
+because this repository and the package are public. `publishConfig.provenance`
+stays true; the tag and access also come from `publishConfig`.
 
 ## Notes
 
-- Provenance only works when publishing from GitHub Actions (OIDC). A local
-  `npm publish` fails because `publishConfig` sets `provenance: true`.
-- `RELEASING.md` is not part of the npm package: the `files` allowlist in
-  `package.json` does not include it.
-
-## Optional: switch to trusted publishing
-
-Only possible after the first publish.
-
-- Publishing with a dist-tag via OIDC needs npm >= 11.21.0. Node 22 ships npm
-  10.9.9 and Node 24 ships 11.19.1, so the workflow already runs
-  `npm install -g npm@11.21.0` (use that or newer) and sets
-  `package-manager-cache: false`.
-- On npmjs.com (package settings), add a trusted publisher for this
-  repository with workflow file `publish.yml` and environment `npm-publish`.
-- Make the first OIDC publish within the window npm states for the change.
-- Then delete the `NPM_TOKEN` environment secret and the `NODE_AUTH_TOKEN`
-  line in `publish.yml`.
+- `RELEASING.md` is not in the npm package because of the `files` allowlist.
+- The case-sensitive GitHub owner/repo in `repository.url` must match
+  `tapp-so/Tapp-Adjust-Capacitor`. The `git+https://github.com/<owner>/<repo>.git`
+  form used here is fine: `git+https://github.com/tapp-so/Tapp-Adjust-Capacitor.git`.
