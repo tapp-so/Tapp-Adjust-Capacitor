@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.1]
+
+### Changed
+
+- First release published from GitHub Actions via npm trusted publishing with provenance (no npm token). There are no code changes relative to `0.1.0-alpha.0`.
+
 ## [0.1.0-alpha.0]
 
 ### Added

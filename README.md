@@ -4,7 +4,7 @@
 
 It is a superset of [`tapp-capacitor-sdk`](https://github.com/tapp-so/Tapp-Capacitor): every core method and event is unchanged, and it adds `handleEvent` and the `adjust*` family.
 
-> **Alpha pre-release.** This is `tapp-adjust-capacitor-sdk` `0.1.0-alpha.0`. Interfaces may change before a stable release.
+> **Alpha pre-release.** This is `tapp-adjust-capacitor-sdk` `0.1.0-alpha.1`. Interfaces may change before a stable release.
 
 > **Choose exactly one plugin.** Install either `tapp-capacitor-sdk` or `tapp-adjust-capacitor-sdk`, never both.
 >
