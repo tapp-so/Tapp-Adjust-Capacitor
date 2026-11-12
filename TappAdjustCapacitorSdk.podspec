@@ -15,8 +15,8 @@ Pod::Spec.new do |s|
   s.resource_bundles = { 'TappAdjustCapacitorSdkPrivacy' => ['ios/Sources/TappAdjustCapacitorPlugin/PrivacyInfo.xcprivacy'] }
   s.ios.deployment_target = '15.0'
   s.dependency 'Capacitor'
-  s.dependency 'Tapp', '= 1.1.23'
-  s.dependency 'Tapp-Adjust', '= 1.1.26'
+  s.dependency 'Tapp', '= 1.1.24'
+  s.dependency 'Tapp-Adjust', '= 1.1.27'
   s.dependency 'Adjust', '= 5.0.1'
   s.dependency 'Tapp-Networking', '= 1.1.7'
   s.swift_version = '5.9'

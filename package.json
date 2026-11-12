@@ -1,6 +1,6 @@
 {
   "name": "tapp-adjust-capacitor-sdk",
-  "version": "0.1.0-alpha.1",
+  "version": "0.1.0-alpha.2",
   "description": "Capacitor plugin for the Tapp deep linking and attribution SDK with the Adjust adapter",
   "main": "dist/plugin.cjs.js",
   "module": "dist/esm/index.js",
