@@ -4,7 +4,7 @@
 
 It is a superset of [`tapp-capacitor-sdk`](https://github.com/tapp-so/Tapp-Capacitor): every core method and event is unchanged, and it adds `handleEvent` and the `adjust*` family.
 
-> **Alpha pre-release.** This is `tapp-adjust-capacitor-sdk` `0.1.0-alpha.1`. Interfaces may change before a stable release.
+> **Alpha pre-release.** This is `tapp-adjust-capacitor-sdk` `0.1.0-alpha.2`. Interfaces may change before a stable release.
 
 > **Choose exactly one plugin.** Install either `tapp-capacitor-sdk` or `tapp-adjust-capacitor-sdk`, never both.
 >
@@ -102,8 +102,8 @@ The plugin pins these native SDK versions:
 
 | Platform | Dependency | Version | Pin |
 |---|---|---|---|
-| iOS | `Tapp` | 1.1.23 | SPM `exact: "1.1.23"`; CocoaPods `= 1.1.23` |
-| iOS | `Tapp-Adjust` (SPM product `TappAdjust`) | 1.1.26 | SPM `exact: "1.1.26"`; CocoaPods `= 1.1.26` |
+| iOS | `Tapp` | 1.1.24 | SPM `exact: "1.1.24"`; CocoaPods `= 1.1.24` |
+| iOS | `Tapp-Adjust` (SPM product `TappAdjust`) | 1.1.27 | SPM `exact: "1.1.27"`; CocoaPods `= 1.1.27` |
 | iOS | `Tapp-Networking` | 1.1.7 | SPM `exact: "1.1.7"`; CocoaPods `= 1.1.7` |
 | iOS | Adjust `ios_sdk` | 5.0.1 | SPM `exact: "5.0.1"` (direct); CocoaPods `Adjust = 5.0.1` |
 | iOS | Adjust `adjust_signature_sdk` | 3.47.0 | SPM `exact: "3.47.0"` (direct); within `ios_sdk` 5.0.1's `3.18.0..<4.0.0` range and equal to Android's `strictly 3.47.0` |

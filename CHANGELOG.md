@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.1.0-alpha.2] - 2026-11-12
+
+### Changed
+
+- Bumped the iOS native pins to Tapp `1.1.24` and Tapp-Adjust `1.1.27` for Swift Package Manager and CocoaPods. Tapp-Networking remains at `1.1.7`, and Adjust remains at `5.0.1`.
+- These native versions include the stale-keychain affiliate configuration fix from Tapp-iOS: the affiliate/environment configuration is re-saved correctly, which unblocks Adjust startup on iOS.
+
 ## [0.1.0-alpha.1]
 
 ### Changed
