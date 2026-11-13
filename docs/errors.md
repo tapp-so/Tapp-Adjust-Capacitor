@@ -17,7 +17,7 @@ For `fetchLinkData({ url })`:
 
 `fetchOriginLinkData()` starts at step 2: it takes no URL. Always inspect `data.error` before routing, as well as catching promise rejections. `shouldProcess` has no startup requirement and no error payload: invalid URLs reject; valid web URLs and caught Android native exceptions resolve `{ value: false }`. On native platforms, use its Adjust link rule (`adj_t`) rather than implementing a separate JavaScript rule.
 
-URL validation trims surrounding whitespace, requires a parseable URL with a scheme, and blocks `javascript:`, `data:` and `file:` case-insensitively. Platform parsers can differ on edge cases; see [URL API notes](../src/definitions.ts#L400). iOS `adjustConvert` uses the same parser for `universalLink`, after platform and startup checks.
+URL validation trims surrounding whitespace, requires a parseable URL with a scheme, and blocks `javascript:`, `data:` and `file:` case-insensitively. Platform parsers can differ on edge cases; see [URL API notes](../src/definitions.ts#L425). iOS `adjustConvert` uses the same parser for `universalLink`, after platform and startup checks.
 
 Adjust calls check platform support first, then startup, then input, then invoke native code. Thus an unsupported platform rejects `UNIMPLEMENTED` even before startup; a supported method rejects `NOT_STARTED` before validating input. Every Adjust API, including `handleEvent` and `getAdjustAttribution`, rejects `UNIMPLEMENTED` on web. Web throws inside async methods reject the returned promise.
 
