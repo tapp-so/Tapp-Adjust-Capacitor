@@ -1,0 +1,14 @@
+# Tapp Adjust Capacitor SDK
+
+> Capacitor SDK for Tapp deep linking, attribution, device match and events with Adjust. A superset of tapp-capacitor-sdk: all core methods and events are unchanged, plus handleEvent, getAdjustAttribution and the adjust* family.
+
+The package is tapp-adjust-capacitor-sdk version 0.1.0-alpha.2 (alpha).
+Choose exactly one of tapp-capacitor-sdk or tapp-adjust-capacitor-sdk, never both; Android guards co-installation, iOS does not and co-installing is unsafe.
+Use "device match" and "SHA-256 certificate hash". Never log tokens.
+
+## Documentation
+
+- [Agent instructions](https://raw.githubusercontent.com/tapp-so/Tapp-Adjust-Capacitor/main/AGENTS.md): Integration and contributor rules.
+- [README](https://raw.githubusercontent.com/tapp-so/Tapp-Adjust-Capacitor/main/README.md): Installation and API guide.
+- [Errors](https://raw.githubusercontent.com/tapp-so/Tapp-Adjust-Capacitor/main/docs/errors.md): Error causes and fixes.
+- [Changelog](https://raw.githubusercontent.com/tapp-so/Tapp-Adjust-Capacitor/main/CHANGELOG.md): Release history.

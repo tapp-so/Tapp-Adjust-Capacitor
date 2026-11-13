@@ -379,6 +379,14 @@ export interface TappPlugin {
    * initialization with START_ERROR. After a successful native start, later calls
    * resolve without validation. On web, every call validates input; the warning is
    * logged once.
+   * Register deferred-link and failure listeners before calling start().
+   * Load authToken, env, and tappToken from app configuration; never log credentials.
+   * Configure the Adjust app token in the Tapp dashboard, not in JavaScript.
+   * @platform iOS, Android; web validates options without starting a native SDK.
+   * @throws Rejects with INVALID_ARGUMENT for invalid credentials or environment.
+   * @throws Rejects with START_ERROR if Android native initialization fails.
+   * @example
+   * await Tapp.start({ authToken, env, tappToken });
    * @since 0.1.0
    */
   start(options: TappStartOptions): Promise<void>;
@@ -386,6 +394,14 @@ export interface TappPlugin {
    * Generate a Tapp link. Rejects with NOT_STARTED before start(), INVALID_ARGUMENT
    * for a missing or empty influencer (also whitespace-only on Android), or URL_ERROR
    * when link generation fails. On web, rejects with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; web behavior is described above.
+   * @throws Rejects with NOT_STARTED before native startup.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with URL_ERROR if link generation fails.
+   * @example
+   * await Tapp.url({ influencer });
    * @since 0.1.0
    */
   url(options: TappUrlOptions): Promise<{ url: string }>;
@@ -394,6 +410,14 @@ export interface TappPlugin {
    * start() or INVALID_ARGUMENT unless eventAction is an integer from 0 through 40.
    * Android may also reject with HANDLE_EVENT_ERROR if SDK event handling fails.
    * On web, rejects with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; web behavior is described above.
+   * @throws Rejects with NOT_STARTED before native startup.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with HANDLE_EVENT_ERROR if Android SDK event handling fails.
+   * @example
+   * await Tapp.handleTappEvent({ eventAction: EventAction.TAPP_ADD_TO_CART });
    * @since 0.1.0
    */
   handleTappEvent(options: TappEventOptions): Promise<void>;
@@ -405,6 +429,12 @@ export interface TappPlugin {
    * Invalid URLs reject with INVALID_URL. On iOS,
    * resolves with the native result. On Android, resolves with { value: false } if the
    * native SDK throws. On web, a valid URL resolves with { value: false }.
+   * Native eligibility uses the Adjust link rule with adj_t; use the native result.
+   * @platform iOS, Android; web behavior is described above.
+   * @throws Rejects with INVALID_URL for an invalid or blocked URL, before checking startup.
+   * @example
+   * const { value } = await Tapp.shouldProcess({ url: incomingUrl });
+   * if (!value) return;
    * @since 0.1.0
    */
   shouldProcess(options: { url: string }): Promise<{ value: boolean }>;
@@ -417,6 +447,15 @@ export interface TappPlugin {
    * a valid URL resolves with { error: true, message }. After start(), SDK/backend
    * failures resolve with { error: true, message }. On web, a valid URL resolves with
    * { error: true, message: 'Tapp is not supported on web.' }.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; web behavior is described above.
+   * @throws Rejects with INVALID_URL for an invalid or blocked URL, before checking startup.
+   * Check data.error even when the promise resolves. iOS omits deepLink.
+   * @returns Link data, or an error payload for startup, resolution, or web support failures.
+   * @example
+   * const data = await Tapp.fetchLinkData({ url: incomingUrl });
+   * if (data.error) return;
+   * // Route using the resolved data.
    * @since 0.1.0
    */
   fetchLinkData(options: { url: string }): Promise<TappLinkData>;
@@ -424,11 +463,27 @@ export interface TappPlugin {
    * Resolve the original install link. Takes no URL, so no URL validation applies.
    * SDK/backend failures and calls before start() resolve with { error: true, message }.
    * On web, resolves with { error: true, message: 'Tapp is not supported on web.' }.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; web behavior is described above.
+   * Check data.error even when the promise resolves. iOS omits deepLink.
+   * @returns Link data, or an error payload for startup, resolution, or web support failures.
+   * @example
+   * const data = await Tapp.fetchOriginLinkData();
+   * if (data.error) return;
+   * // Route using the resolved data.
    * @since 0.1.0
    */
   fetchOriginLinkData(): Promise<TappLinkData>;
   /**
    * Listen for a deferred link. Native events are retained until a listener attaches.
+   * Register before start() to receive startup events.
+   * @platform iOS, Android; web has no native Tapp events.
+   * @example
+   * const listener = await Tapp.addListener('deferredLinkReceived', (data) => {
+   *   if (data.error) return;
+   *   // Route using the resolved data.
+   * });
+   * await listener.remove();
    * @since 0.1.0
    */
   addListener(
@@ -437,6 +492,13 @@ export interface TappPlugin {
   ): Promise<PluginListenerHandle>;
   /**
    * Listen for URL resolution failures.
+   * Register before start() to receive startup events.
+   * @platform iOS, Android; web has no native Tapp events.
+   * @example
+   * const listener = await Tapp.addListener('didFailResolvingURL', () => {
+   *   // Show a generic link-resolution failure without logging payloads.
+   * });
+   * await listener.remove();
    * @since 0.1.0
    */
   addListener(
@@ -445,6 +507,10 @@ export interface TappPlugin {
   ): Promise<PluginListenerHandle>;
   /**
    * Remove all plugin event listeners.
+   * Does not require start(). Removes both deferred-link and failure listeners.
+   * @platform iOS, Android, web.
+   * @example
+   * await Tapp.removeAllListeners();
    * @since 0.1.0
    */
   removeAllListeners(): Promise<void>;
@@ -825,6 +891,14 @@ export interface TappAdjustPlugin extends TappPlugin {
    * Send an Adjust event by token. iOS and Android. Rejects with NOT_STARTED before
    * start() or INVALID_ARGUMENT for a missing or blank eventToken. On web, rejects
    * with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @throws Rejects with HANDLE_EVENT_ERROR if Android SDK event handling throws.
+   * @example
+   * await Tapp.handleEvent({ eventToken });
    * @since 0.1.0
    */
   handleEvent(options: AdjustEventOptions): Promise<void>;
@@ -832,6 +906,14 @@ export interface TappAdjustPlugin extends TappPlugin {
    * Read the Adjust attribution. iOS and Android. Fields without a value are omitted;
    * fbInstallReferrer is Android only. Rejects with NOT_STARTED before start(). On web,
    * rejects with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * The promise can remain pending if the native callback never fires; no timeout is added.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.getAdjustAttribution();
    * @since 0.1.0
    */
   getAdjustAttribution(): Promise<{ attribution: AdjustAttribution }>;
@@ -839,6 +921,14 @@ export interface TappAdjustPlugin extends TappPlugin {
    * Read the Adjust device identifier. iOS and Android. adid is omitted when
    * unavailable. Rejects with NOT_STARTED before start(). On web, rejects with
    * UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * The promise can remain pending if the native callback never fires; no timeout is added.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustGetAdid();
    * @since 0.1.0
    */
   adjustGetAdid(): Promise<{ adid?: string }>;
@@ -847,6 +937,14 @@ export interface TappAdjustPlugin extends TappPlugin {
    * native SDK reads the Google advertising identifier). idfa is omitted when
    * unavailable. Rejects with NOT_STARTED before start(). On web, rejects with
    * UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * The promise can remain pending if the native callback never fires; no timeout is added.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustGetIdfa();
    * @since 0.1.0
    */
   adjustGetIdfa(): Promise<{ idfa?: string }>;
@@ -854,6 +952,14 @@ export interface TappAdjustPlugin extends TappPlugin {
    * Track ad revenue. iOS and Android. Rejects with NOT_STARTED before start() or
    * INVALID_ARGUMENT for a blank source or currency or a non-finite or negative
    * revenue. On web, rejects with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustTrackAdRevenue({ source, revenue, currency });
    * @since 0.1.0
    */
   adjustTrackAdRevenue(options: AdjustAdRevenueOptions): Promise<void>;
@@ -861,12 +967,27 @@ export interface TappAdjustPlugin extends TappPlugin {
    * Set the push notification token. iOS and Android. Rejects with NOT_STARTED before
    * start() or INVALID_ARGUMENT for a missing or blank token. On web, rejects with
    * UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustSetPushToken({ token: pushToken });
    * @since 0.1.0
    */
   adjustSetPushToken(options: AdjustPushTokenOptions): Promise<void>;
   /**
    * Ask Adjust to forget this device (GDPR). iOS and Android. Rejects with NOT_STARTED
    * before start(). On web, rejects with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustGdprForgetMe();
    * @since 0.1.0
    */
   adjustGdprForgetMe(): Promise<void>;
@@ -874,6 +995,14 @@ export interface TappAdjustPlugin extends TappPlugin {
    * Enable or disable third-party sharing. iOS and Android. Rejects with NOT_STARTED
    * before start() or INVALID_ARGUMENT unless enabled is a boolean. On web, rejects
    * with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustTrackThirdPartySharing({ enabled: false });
    * @since 0.1.0
    */
   adjustTrackThirdPartySharing(options: AdjustThirdPartySharingOptions): Promise<void>;
@@ -881,36 +1010,80 @@ export interface TappAdjustPlugin extends TappPlugin {
    * Record measurement consent. iOS and Android. Rejects with NOT_STARTED before
    * start() or INVALID_ARGUMENT unless consent is a boolean. On web, rejects with
    * UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustTrackMeasurementConsent({ consent: true });
    * @since 0.1.0
    */
   adjustTrackMeasurementConsent(options: AdjustMeasurementConsentOptions): Promise<void>;
   /**
    * Enable the Adjust SDK. iOS and Android. Rejects with NOT_STARTED before start().
    * On web, rejects with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustEnable();
    * @since 0.1.0
    */
   adjustEnable(): Promise<void>;
   /**
    * Disable the Adjust SDK. iOS and Android. Rejects with NOT_STARTED before start().
    * On web, rejects with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustDisable();
    * @since 0.1.0
    */
   adjustDisable(): Promise<void>;
   /**
    * Read whether the Adjust SDK is enabled. iOS and Android. Rejects with NOT_STARTED
    * before start(). On web, rejects with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * The promise can remain pending if the native callback never fires; no timeout is added.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustIsEnabled();
    * @since 0.1.0
    */
   adjustIsEnabled(): Promise<{ isEnabled: boolean }>;
   /**
    * Switch the Adjust SDK to offline mode. iOS and Android. Rejects with NOT_STARTED
    * before start(). On web, rejects with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustSwitchToOfflineMode();
    * @since 0.1.0
    */
   adjustSwitchToOfflineMode(): Promise<void>;
   /**
    * Switch the Adjust SDK back to online mode. iOS and Android. Rejects with
    * NOT_STARTED before start(). On web, rejects with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustSwitchBackToOnlineMode();
    * @since 0.1.0
    */
   adjustSwitchBackToOnlineMode(): Promise<void>;
@@ -918,6 +1091,14 @@ export interface TappAdjustPlugin extends TappPlugin {
    * Add a global callback parameter. iOS and Android. Rejects with NOT_STARTED before
    * start() or INVALID_ARGUMENT for a missing or blank key or value. On web, rejects
    * with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustAddGlobalCallbackParameter({ key, value });
    * @since 0.1.0
    */
   adjustAddGlobalCallbackParameter(options: AdjustGlobalParameterOptions): Promise<void>;
@@ -925,6 +1106,14 @@ export interface TappAdjustPlugin extends TappPlugin {
    * Add a global partner parameter. iOS and Android. Rejects with NOT_STARTED before
    * start() or INVALID_ARGUMENT for a missing or blank key or value. On web, rejects
    * with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustAddGlobalPartnerParameter({ key, value });
    * @since 0.1.0
    */
   adjustAddGlobalPartnerParameter(options: AdjustGlobalParameterOptions): Promise<void>;
@@ -932,6 +1121,14 @@ export interface TappAdjustPlugin extends TappPlugin {
    * Remove a global callback parameter. iOS and Android. Rejects with NOT_STARTED
    * before start() or INVALID_ARGUMENT for a missing or blank key. On web, rejects
    * with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustRemoveGlobalCallbackParameter({ key });
    * @since 0.1.0
    */
   adjustRemoveGlobalCallbackParameter(options: AdjustGlobalParameterKeyOptions): Promise<void>;
@@ -939,24 +1136,54 @@ export interface TappAdjustPlugin extends TappPlugin {
    * Remove a global partner parameter. iOS and Android. Rejects with NOT_STARTED
    * before start() or INVALID_ARGUMENT for a missing or blank key. On web, rejects
    * with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustRemoveGlobalPartnerParameter({ key });
    * @since 0.1.0
    */
   adjustRemoveGlobalPartnerParameter(options: AdjustGlobalParameterKeyOptions): Promise<void>;
   /**
    * Remove all global callback parameters. iOS and Android. Rejects with NOT_STARTED
    * before start(). On web, rejects with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustRemoveGlobalCallbackParameters();
    * @since 0.1.0
    */
   adjustRemoveGlobalCallbackParameters(): Promise<void>;
   /**
    * Remove all global partner parameters. iOS and Android. Rejects with NOT_STARTED
    * before start(). On web, rejects with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustRemoveGlobalPartnerParameters();
    * @since 0.1.0
    */
   adjustRemoveGlobalPartnerParameters(): Promise<void>;
   /**
    * Read the Adjust SDK version. iOS and Android. version is omitted when unavailable.
    * Rejects with NOT_STARTED before start(). On web, rejects with UNIMPLEMENTED.
+   * Call start() first and await its successful completion.
+   * The promise can remain pending if the native callback never fires; no timeout is added.
+   * @platform iOS, Android; unsupported on web.
+   * @throws Rejects with UNIMPLEMENTED on web.
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustGetSdkVersion();
    * @since 0.1.0
    */
   adjustGetSdkVersion(): Promise<{ version?: string }>;
@@ -964,6 +1191,16 @@ export interface TappAdjustPlugin extends TappPlugin {
    * Verify an App Store purchase. iOS only; Android and web reject with UNIMPLEMENTED.
    * Rejects with NOT_STARTED before start(), INVALID_ARGUMENT for a missing or blank
    * transactionId or productId, or UNAVAILABLE if the native SDK returns no result.
+   * Call start() first and await its successful completion.
+   * The promise can remain pending if the native callback never fires; no timeout is added.
+   * The platform gate runs before startup and input validation.
+   * @platform iOS only; Android and web are unsupported.
+   * @throws Rejects with UNIMPLEMENTED on Android and web, even before start().
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @throws Rejects with UNAVAILABLE if no usable verification result is returned.
+   * @example
+   * await Tapp.adjustVerifyAppStorePurchase({ transactionId, productId });
    * @since 0.1.0
    */
   adjustVerifyAppStorePurchase(options: AdjustAppStorePurchaseOptions): Promise<VerifyResult>;
@@ -972,6 +1209,14 @@ export interface TappAdjustPlugin extends TappPlugin {
    * only; Android and web reject with UNIMPLEMENTED. Rejects with NOT_STARTED before
    * start() or INVALID_ARGUMENT for a non-finite price or a missing or blank currency
    * or transactionId.
+   * Call start() first and await its successful completion.
+   * The platform gate runs before startup and input validation.
+   * @platform iOS only; Android and web are unsupported.
+   * @throws Rejects with UNIMPLEMENTED on Android and web, even before start().
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @example
+   * await Tapp.adjustTrackAppStoreSubscription({ price, currency, transactionId });
    * @since 0.1.0
    */
   adjustTrackAppStoreSubscription(options: AdjustAppStoreSubscriptionOptions): Promise<void>;
@@ -980,6 +1225,15 @@ export interface TappAdjustPlugin extends TappPlugin {
    * reject with UNIMPLEMENTED. url is omitted when the native SDK cannot convert the
    * link. Rejects with NOT_STARTED before start(), INVALID_URL for an unparsable
    * universalLink, or INVALID_ARGUMENT for a missing or blank scheme.
+   * Call start() first and await its successful completion.
+   * The platform gate runs before startup and input validation.
+   * @platform iOS only; Android and web are unsupported.
+   * @throws Rejects with UNIMPLEMENTED on Android and web, even before start().
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @throws Rejects with INVALID_URL for an invalid universalLink.
+   * @example
+   * await Tapp.adjustConvert({ universalLink, scheme });
    * @since 0.1.0
    */
   adjustConvert(options: AdjustConvertOptions): Promise<{ url?: string }>;
@@ -987,12 +1241,28 @@ export interface TappAdjustPlugin extends TappPlugin {
    * Request App Tracking Transparency authorization. iOS only; Android and web reject
    * with UNIMPLEMENTED. status is omitted when the native SDK returns no value. The host
    * app needs NSUserTrackingUsageDescription. Rejects with NOT_STARTED before start().
+   * Call start() first and await its successful completion.
+   * The promise can remain pending if the native callback never fires; no timeout is added.
+   * The platform gate runs before startup and input validation.
+   * @platform iOS only; Android and web are unsupported.
+   * @throws Rejects with UNIMPLEMENTED on Android and web, even before start().
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @example
+   * await Tapp.adjustRequestAppTrackingAuthorization();
    * @since 0.1.0
    */
   adjustRequestAppTrackingAuthorization(): Promise<{ status?: number }>;
   /**
    * Read the App Tracking Transparency authorization status. iOS only; Android and web
    * reject with UNIMPLEMENTED. Rejects with NOT_STARTED before start().
+   * Call start() first and await its successful completion.
+   * Add NSUserTrackingUsageDescription to the host Info.plist before calling this API.
+   * The platform gate runs before startup and input validation.
+   * @platform iOS only; Android and web are unsupported.
+   * @throws Rejects with UNIMPLEMENTED on Android and web, even before start().
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @example
+   * await Tapp.adjustAppTrackingAuthorizationStatus();
    * @since 0.1.0
    */
   adjustAppTrackingAuthorizationStatus(): Promise<{ status: number }>;
@@ -1001,6 +1271,16 @@ export interface TappAdjustPlugin extends TappPlugin {
    * UNIMPLEMENTED. Rejects with NOT_STARTED before start(), INVALID_ARGUMENT for a
    * non-integer value or an invalid optional field, or SKAN_ERROR when the native SDK
    * reports an error.
+   * Call start() first and await its successful completion.
+   * The promise can remain pending if the native callback never fires; no timeout is added.
+   * The platform gate runs before startup and input validation.
+   * @platform iOS only; Android and web are unsupported.
+   * @throws Rejects with UNIMPLEMENTED on Android and web, even before start().
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @throws Rejects with SKAN_ERROR if the native SDK reports a conversion update error.
+   * @example
+   * await Tapp.adjustUpdateSkanConversionValue({ value: conversionValue });
    * @since 0.1.0
    */
   adjustUpdateSkanConversionValue(options: AdjustSkanConversionValueOptions): Promise<void>;
@@ -1008,6 +1288,15 @@ export interface TappAdjustPlugin extends TappPlugin {
    * Track a Google Play subscription. Android only; iOS and web reject with
    * UNIMPLEMENTED. Rejects with NOT_STARTED before start() or INVALID_ARGUMENT for a
    * non-finite price or purchaseTime or a missing or blank string field.
+   * Call start() first and await its successful completion.
+   * The platform gate runs before startup and input validation.
+   * @platform Android only; iOS and web are unsupported.
+   * @throws Rejects with UNIMPLEMENTED on iOS and web, even before start().
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustTrackPlayStoreSubscription({ price: priceAmountMicros, currency, sku, orderId, signature, purchaseToken });
    * @since 0.1.0
    */
   adjustTrackPlayStoreSubscription(options: AdjustPlayStoreSubscriptionOptions): Promise<void>;
@@ -1016,6 +1305,17 @@ export interface TappAdjustPlugin extends TappPlugin {
    * only; iOS and web reject with UNIMPLEMENTED. Rejects with NOT_STARTED before start(),
    * INVALID_ARGUMENT for a missing or blank transactionId or productId, or UNAVAILABLE if
    * the native SDK returns no result.
+   * Call start() first and await its successful completion.
+   * The promise can remain pending if the native callback never fires; no timeout is added.
+   * The platform gate runs before startup and input validation.
+   * @platform Android only; iOS and web are unsupported.
+   * @throws Rejects with UNIMPLEMENTED on iOS and web, even before start().
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @throws Rejects with UNAVAILABLE if no usable verification result is returned.
+   * @example
+   * await Tapp.adjustVerifyPlayStorePurchase({ transactionId: purchaseToken, productId });
    * @since 0.1.0
    */
   adjustVerifyPlayStorePurchase(options: AdjustPlayStorePurchaseOptions): Promise<VerifyResult>;
@@ -1023,6 +1323,17 @@ export interface TappAdjustPlugin extends TappPlugin {
    * Verify a Google Play purchase and track the Adjust event. Android only; iOS and web
    * reject with UNIMPLEMENTED. Rejects with NOT_STARTED before start(), INVALID_ARGUMENT
    * for a missing or blank eventToken, or UNAVAILABLE if the native SDK returns no result.
+   * Call start() first and await its successful completion.
+   * The promise can remain pending if the native callback never fires; no timeout is added.
+   * The platform gate runs before startup and input validation.
+   * @platform Android only; iOS and web are unsupported.
+   * @throws Rejects with UNIMPLEMENTED on iOS and web, even before start().
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @throws Rejects with UNAVAILABLE if no usable verification result is returned.
+   * @example
+   * await Tapp.adjustVerifyAndTrackPlayStorePurchase({ eventToken });
    * @since 0.1.0
    */
   adjustVerifyAndTrackPlayStorePurchase(options: AdjustEventOptions): Promise<VerifyResult>;
@@ -1030,6 +1341,15 @@ export interface TappAdjustPlugin extends TappPlugin {
    * Read the Google advertising identifier. Android only; iOS and web reject with
    * UNIMPLEMENTED. googleAdId is omitted when unavailable. Rejects with NOT_STARTED
    * before start().
+   * Call start() first and await its successful completion.
+   * The promise can remain pending if the native callback never fires; no timeout is added.
+   * The platform gate runs before startup and input validation.
+   * @platform Android only; iOS and web are unsupported.
+   * @throws Rejects with UNIMPLEMENTED on iOS and web, even before start().
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustGetGoogleAdId();
    * @since 0.1.0
    */
   adjustGetGoogleAdId(): Promise<{ googleAdId?: string }>;
@@ -1037,6 +1357,15 @@ export interface TappAdjustPlugin extends TappPlugin {
    * Read the Amazon advertising identifier. Android only; iOS and web reject with
    * UNIMPLEMENTED. amazonAdId is omitted when unavailable. Rejects with NOT_STARTED
    * before start().
+   * Call start() first and await its successful completion.
+   * The promise can remain pending if the native callback never fires; no timeout is added.
+   * The platform gate runs before startup and input validation.
+   * @platform Android only; iOS and web are unsupported.
+   * @throws Rejects with UNIMPLEMENTED on iOS and web, even before start().
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustGetAmazonAdId();
    * @since 0.1.0
    */
   adjustGetAmazonAdId(): Promise<{ amazonAdId?: string }>;
@@ -1044,12 +1373,31 @@ export interface TappAdjustPlugin extends TappPlugin {
    * Read the Google Play install referrer. Android only; iOS and web reject with
    * UNIMPLEMENTED. Unavailable fields are omitted. Rejects with NOT_STARTED before
    * start() or INSTALL_REFERRER_ERROR when the native read fails.
+   * Call start() first and await its successful completion.
+   * The promise can remain pending if the native callback never fires; no timeout is added.
+   * The platform gate runs before startup and input validation.
+   * @platform Android only; iOS and web are unsupported.
+   * @throws Rejects with UNIMPLEMENTED on iOS and web, even before start().
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @throws Rejects with INSTALL_REFERRER_ERROR if the native referrer read fails.
+   * @example
+   * await Tapp.adjustGetGooglePlayInstallReferrer();
    * @since 0.1.0
    */
   adjustGetGooglePlayInstallReferrer(): Promise<AdjustInstallReferrer>;
   /**
    * Set the referrer. Android only; iOS and web reject with UNIMPLEMENTED. Rejects with
    * NOT_STARTED before start() or INVALID_ARGUMENT for a missing or blank referrer.
+   * Call start() first and await its successful completion.
+   * The platform gate runs before startup and input validation.
+   * @platform Android only; iOS and web are unsupported.
+   * @throws Rejects with UNIMPLEMENTED on iOS and web, even before start().
+   * @throws Rejects with NOT_STARTED until native start() succeeds.
+   * @throws Rejects with INVALID_ARGUMENT for invalid options as described above.
+   * @throws Rejects with UNAVAILABLE if the Android native call throws synchronously.
+   * @example
+   * await Tapp.adjustSetReferrer({ referrer });
    * @since 0.1.0
    */
   adjustSetReferrer(options: AdjustReferrerOptions): Promise<void>;
