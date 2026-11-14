@@ -1,0 +1,2233 @@
+{
+  "schema": "tapp-errors/1",
+  "package": {
+    "name": "tapp-adjust-capacitor-sdk",
+    "version": "0.1.0-alpha.2",
+    "sdk": "adjust",
+    "framework": "capacitor"
+  },
+  "errors": [
+    {
+      "id": "ios-start-input",
+      "code": "INVALID_ARGUMENT",
+      "message": "authToken and tappToken must be nonempty strings; env must be PRODUCTION or SANDBOX.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "start"
+      ],
+      "behaviour": "reject",
+      "when": "before-start",
+      "cause": "A token is missing, empty or not a string, or env is invalid.",
+      "fix": "Load the correct dashboard tokens from app configuration and pass env exactly PRODUCTION or SANDBOX. Use tokens containing non-whitespace characters; never log their values.",
+      "docs": "docs/errors.md#ios-start-input",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 35
+      },
+      "notes": "iOS uses isEmpty, so whitespace-only tokens pass this check. After successful native start, later calls resolve before validation."
+    },
+    {
+      "id": "android-start-input",
+      "code": "INVALID_ARGUMENT",
+      "message": "Nonempty authToken and tappToken and env PRODUCTION or SANDBOX are required.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "start"
+      ],
+      "behaviour": "reject",
+      "when": "before-start",
+      "cause": "A token is missing, blank or not a string, or env is invalid.",
+      "fix": "Load the correct dashboard tokens from app configuration and pass env exactly PRODUCTION or SANDBOX. Use tokens containing non-whitespace characters; never log their values.",
+      "docs": "docs/errors.md#android-start-input",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 66
+      },
+      "notes": "Android rejects whitespace-only tokens. After successful native start, later calls resolve before validation."
+    },
+    {
+      "id": "web-start-input",
+      "code": "INVALID_ARGUMENT",
+      "message": "authToken, tappToken, and a PRODUCTION or SANDBOX env are required.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "start"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "A token is missing, blank or not a string, or env is invalid.",
+      "fix": "Load the correct dashboard tokens from app configuration and pass env exactly PRODUCTION or SANDBOX. Use tokens containing non-whitespace characters; never log their values.",
+      "docs": "docs/errors.md#web-start-input",
+      "source": {
+        "file": "src/web.ts",
+        "line": 50
+      },
+      "notes": "Web validates every start call, rejects whitespace-only tokens and does not initialize a native SDK."
+    },
+    {
+      "id": "android-start-native",
+      "code": "START_ERROR",
+      "message": "Unable to start Tapp.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "start"
+      ],
+      "behaviour": "reject",
+      "when": "before-start",
+      "cause": "Native instance setup or startup throws.",
+      "fix": "Check the app configuration, token environment and native integration, then retry startup without logging credentials.",
+      "docs": "docs/errors.md#android-start-native",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 78
+      }
+    },
+    {
+      "id": "ios-url-not-started",
+      "code": "NOT_STARTED",
+      "message": "Tapp has not been started. Call start() first.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "url"
+      ],
+      "behaviour": "reject",
+      "when": "before-start",
+      "cause": "Successful startup has not completed.",
+      "fix": "Await successful Tapp.start() before calling this method.",
+      "docs": "docs/errors.md#ios-url-not-started",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 52
+      }
+    },
+    {
+      "id": "ios-handleTappEvent-not-started",
+      "code": "NOT_STARTED",
+      "message": "Tapp has not been started. Call start() first.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "handleTappEvent"
+      ],
+      "behaviour": "reject",
+      "when": "before-start",
+      "cause": "Successful startup has not completed.",
+      "fix": "Await successful Tapp.start() before calling this method.",
+      "docs": "docs/errors.md#ios-handleTappEvent-not-started",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 79
+      }
+    },
+    {
+      "id": "android-core-not-started",
+      "code": "NOT_STARTED",
+      "message": "Tapp has not been started. Call start() first.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "url",
+        "handleTappEvent"
+      ],
+      "behaviour": "reject",
+      "when": "before-start",
+      "cause": "Startup has not completed, or the native instance is absent.",
+      "fix": "Await successful Tapp.start(); avoid calls while the plugin is being destroyed.",
+      "docs": "docs/errors.md#android-core-not-started",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 168
+      },
+      "notes": "requireStarted uses coreGate(started, instance != null); missing instance rejects even if the started flag is true."
+    },
+    {
+      "id": "ios-url-input",
+      "code": "INVALID_ARGUMENT",
+      "message": "influencer must be a nonempty string.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "url"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "influencer is missing, empty or not a string.",
+      "fix": "Pass a nonblank influencer string after startup.",
+      "docs": "docs/errors.md#ios-url-input",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 56
+      },
+      "notes": "iOS accepts whitespace-only influencer strings; Android rejects them."
+    },
+    {
+      "id": "android-url-input",
+      "code": "INVALID_ARGUMENT",
+      "message": "A nonempty influencer is required.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "url"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "influencer is missing, blank or not a string.",
+      "fix": "Pass a nonblank influencer string after startup.",
+      "docs": "docs/errors.md#android-url-input",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 87
+      }
+    },
+    {
+      "id": "ios-url-native",
+      "code": "URL_ERROR",
+      "message": "error.localizedDescription",
+      "messageKind": "localizedDescription",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "url"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "The native URL-generation callback returns failure.",
+      "fix": "Check startup configuration, network availability and link-generation input; handle rejection without logging sensitive native text.",
+      "docs": "docs/errors.md#ios-url-native",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 69
+      }
+    },
+    {
+      "id": "android-url-native-result",
+      "code": "URL_ERROR",
+      "message": "result.message if nonblank; otherwise \"Unable to generate Tapp URL.\"",
+      "messageKind": "pattern",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "url"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "The native URL-generation result has error=true.",
+      "fix": "Check startup configuration, network availability and link-generation input; handle rejection without logging sensitive native text.",
+      "docs": "docs/errors.md#android-url-native-result",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 97
+      }
+    },
+    {
+      "id": "android-url-native-empty",
+      "code": "URL_ERROR",
+      "message": "No Tapp URL returned.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "url"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "The native result reports success but influencer_url is blank.",
+      "fix": "Check startup configuration, network availability and link-generation input; handle rejection without logging sensitive native text.",
+      "docs": "docs/errors.md#android-url-native-empty",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 99
+      }
+    },
+    {
+      "id": "android-url-native-exception",
+      "code": "URL_ERROR",
+      "message": "Unable to generate Tapp URL.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "url"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "URL generation throws a non-cancellation exception.",
+      "fix": "Check startup configuration, network availability and link-generation input; handle rejection without logging sensitive native text.",
+      "docs": "docs/errors.md#android-url-native-exception",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 106
+      }
+    },
+    {
+      "id": "ios-tapp-event-input",
+      "code": "INVALID_ARGUMENT",
+      "message": "eventAction must be an integer from 0 through 40.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "handleTappEvent"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "eventAction is missing, the wrong type, non-finite, fractional or outside 0 through 40.",
+      "fix": "Pass a numeric integer from 0 through 40; for action 0, optionally pass customValue. Booleans and numeric strings are invalid.",
+      "docs": "docs/errors.md#ios-tapp-event-input",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 85
+      },
+      "notes": "Missing or blank customValue for action 0 uses custom_event_autogenerated. Invalid metadata values are dropped rather than rejected."
+    },
+    {
+      "id": "android-tapp-event-input",
+      "code": "INVALID_ARGUMENT",
+      "message": "eventAction must be an integer from 0 through 40.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "handleTappEvent"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "eventAction is missing, the wrong type, non-finite, fractional or outside 0 through 40.",
+      "fix": "Pass a numeric integer from 0 through 40; for action 0, optionally pass customValue. Booleans and numeric strings are invalid.",
+      "docs": "docs/errors.md#android-tapp-event-input",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 116
+      },
+      "notes": "Missing or blank customValue for action 0 uses custom_event_autogenerated. Invalid metadata values are dropped rather than rejected."
+    },
+    {
+      "id": "android-tapp-event-native",
+      "code": "HANDLE_EVENT_ERROR",
+      "message": "Unable to handle Tapp event.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "handleTappEvent"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "The native Tapp event call throws.",
+      "fix": "Check successful startup and event input; handle native delivery failure without logging event payloads.",
+      "docs": "docs/errors.md#android-tapp-event-native",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 124
+      }
+    },
+    {
+      "id": "ios-shouldProcess-url",
+      "code": "INVALID_URL",
+      "message": "url must be a nonempty, valid URL.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "shouldProcess"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "The URL is missing, blank, the wrong type, unparsable, lacks a scheme, or uses javascript:, data: or file: (case-insensitive).",
+      "fix": "Pass a nonblank absolute URL with an allowed scheme. Use native shouldProcess to decide whether Tapp handles a link.",
+      "docs": "docs/errors.md#ios-shouldProcess-url",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 100
+      }
+    },
+    {
+      "id": "ios-fetchLinkData-url",
+      "code": "INVALID_URL",
+      "message": "url must be a nonempty, valid URL.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "fetchLinkData"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "The URL is missing, blank, the wrong type, unparsable, lacks a scheme, or uses javascript:, data: or file: (case-insensitive).",
+      "fix": "Pass a nonblank absolute URL with an allowed scheme. Use native shouldProcess to decide whether Tapp handles a link.",
+      "docs": "docs/errors.md#ios-fetchLinkData-url",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 110
+      }
+    },
+    {
+      "id": "android-required-url",
+      "code": "INVALID_URL",
+      "message": "url must be a nonempty, valid URL.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "shouldProcess",
+        "fetchLinkData"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "The URL is missing, blank, the wrong type, unparsable, lacks a scheme, or uses javascript:, data: or file: (case-insensitive).",
+      "fix": "Pass a nonblank absolute URL with an allowed scheme. Use native shouldProcess to decide whether Tapp handles a link.",
+      "docs": "docs/errors.md#android-required-url",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 181
+      }
+    },
+    {
+      "id": "web-required-url",
+      "code": "INVALID_URL",
+      "message": "url must be a nonempty, valid URL.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "shouldProcess",
+        "fetchLinkData"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "The URL is missing, blank, the wrong type, unparsable, lacks a scheme, or uses javascript:, data: or file: (case-insensitive).",
+      "fix": "Pass a nonblank absolute URL with an allowed scheme. Use native shouldProcess to decide whether Tapp handles a link.",
+      "docs": "docs/errors.md#web-required-url",
+      "source": {
+        "file": "src/web.ts",
+        "line": 389
+      }
+    },
+    {
+      "id": "ios-fetchLinkData-not-started",
+      "code": null,
+      "message": "Tapp has not been started. Call start() first.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "fetchLinkData"
+      ],
+      "behaviour": "resolve-error",
+      "when": "before-start",
+      "cause": "Successful startup has not completed.",
+      "fix": "Await successful Tapp.start() and inspect data.error before routing.",
+      "docs": "docs/errors.md#ios-fetchLinkData-not-started",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 115
+      }
+    },
+    {
+      "id": "ios-fetchOriginLinkData-not-started",
+      "code": null,
+      "message": "Tapp has not been started. Call start() first.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "fetchOriginLinkData"
+      ],
+      "behaviour": "resolve-error",
+      "when": "before-start",
+      "cause": "Successful startup has not completed.",
+      "fix": "Await successful Tapp.start() and inspect data.error before routing.",
+      "docs": "docs/errors.md#ios-fetchOriginLinkData-not-started",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 127
+      }
+    },
+    {
+      "id": "android-link-data-not-started",
+      "code": null,
+      "message": "Tapp has not been started. Call start() first.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "fetchLinkData",
+        "fetchOriginLinkData"
+      ],
+      "behaviour": "resolve-error",
+      "when": "before-start",
+      "cause": "Successful startup has not completed.",
+      "fix": "Await successful Tapp.start() and inspect data.error before routing.",
+      "docs": "docs/errors.md#android-link-data-not-started",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 174
+      }
+    },
+    {
+      "id": "ios-link-data-native",
+      "code": null,
+      "message": "error.localizedDescription",
+      "messageKind": "localizedDescription",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "fetchLinkData",
+        "fetchOriginLinkData"
+      ],
+      "behaviour": "resolve-error",
+      "when": "after-start",
+      "cause": "The native link-data callback returns failure.",
+      "fix": "Inspect data.error before routing. Check startup, link configuration and network availability; show a generic failure without logging the payload.",
+      "docs": "docs/errors.md#ios-link-data-native",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 140
+      }
+    },
+    {
+      "id": "android-link-data-exception",
+      "code": null,
+      "message": "error.message passed through optionalString; otherwise \"An unexpected error occurred\"",
+      "messageKind": "pattern",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "fetchLinkData",
+        "fetchOriginLinkData"
+      ],
+      "behaviour": "resolve-error",
+      "when": "after-start",
+      "cause": "Link-data lookup throws a non-cancellation exception.",
+      "fix": "Inspect data.error before routing. Check startup, link configuration and network availability; show a generic failure without logging the payload.",
+      "docs": "docs/errors.md#android-link-data-exception",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 158
+      },
+      "notes": "Fallback and filtering are in TappAdjustMapping.kt:96-106. Cancellation is rethrown internally, not converted to a bridge error code."
+    },
+    {
+      "id": "android-link-data-null",
+      "code": null,
+      "message": "No link data returned",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "fetchLinkData",
+        "fetchOriginLinkData"
+      ],
+      "behaviour": "resolve-error",
+      "when": "after-start",
+      "cause": "Native link-data response is null.",
+      "fix": "Inspect data.error before routing. Check startup, link configuration and network availability; show a generic failure without logging the payload.",
+      "docs": "docs/errors.md#android-link-data-null",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustMapping.kt",
+        "line": 110
+      }
+    },
+    {
+      "id": "android-link-data-result",
+      "code": null,
+      "message": "response.message passed through optionalString; otherwise \"An unexpected error occurred\"",
+      "messageKind": "pattern",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "fetchLinkData",
+        "fetchOriginLinkData"
+      ],
+      "behaviour": "resolve-error",
+      "when": "after-start",
+      "cause": "Native response.error is true.",
+      "fix": "Inspect data.error before routing. Check startup, link configuration and network availability; show a generic failure without logging the payload.",
+      "docs": "docs/errors.md#android-link-data-result",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustMapping.kt",
+        "line": 111
+      }
+    },
+    {
+      "id": "android-link-data-fallback",
+      "code": null,
+      "message": "An unexpected error occurred",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "fetchLinkData",
+        "fetchOriginLinkData"
+      ],
+      "behaviour": "resolve-error",
+      "when": "either",
+      "cause": "The error helper receives a missing or filtered-out message.",
+      "fix": "Inspect data.error before routing. Check startup, link configuration and network availability; show a generic failure without logging the payload.",
+      "docs": "docs/errors.md#android-link-data-fallback",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustMapping.kt",
+        "line": 106
+      },
+      "notes": "optionalString filters blank strings, case-insensitive null, -1, and the four missing-field sentinels listed at TappAdjustMapping.kt:91-94. Shared helper used by the Android link-data sites above."
+    },
+    {
+      "id": "web-link-data",
+      "code": null,
+      "message": "Tapp is not supported on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "fetchLinkData",
+        "fetchOriginLinkData"
+      ],
+      "behaviour": "resolve-error",
+      "when": "either",
+      "cause": "Link-data APIs are called on web (fetchLinkData URL is valid).",
+      "fix": "Run link resolution on iOS or Android and inspect data.error before routing.",
+      "docs": "docs/errors.md#web-link-data",
+      "source": {
+        "file": "src/web.ts",
+        "line": 396
+      }
+    },
+    {
+      "id": "ios-adjust-platform",
+      "code": "UNIMPLEMENTED",
+      "message": "{method} is not available on iOS.",
+      "messageKind": "pattern",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "adjustTrackPlayStoreSubscription",
+        "adjustVerifyPlayStorePurchase",
+        "adjustVerifyAndTrackPlayStorePurchase",
+        "adjustGetGoogleAdId",
+        "adjustGetAmazonAdId",
+        "adjustGetGooglePlayInstallReferrer",
+        "adjustSetReferrer"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "An Android-only method is called on iOS.",
+      "fix": "Gate the call by platform and use this method only on Android.",
+      "docs": "docs/errors.md#ios-adjust-platform",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustMapping.swift",
+        "line": 54
+      },
+      "notes": "Substitute the exact method name from methods. Forwarded by TappAdjustPlugin.swift:176; platform gate precedes startup and input validation."
+    },
+    {
+      "id": "ios-adjust-not-started",
+      "code": "NOT_STARTED",
+      "message": "Tapp has not been started. Call start() first.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "handleEvent",
+        "getAdjustAttribution",
+        "adjustGetAdid",
+        "adjustGetIdfa",
+        "adjustTrackAdRevenue",
+        "adjustSetPushToken",
+        "adjustGdprForgetMe",
+        "adjustTrackThirdPartySharing",
+        "adjustTrackMeasurementConsent",
+        "adjustEnable",
+        "adjustDisable",
+        "adjustIsEnabled",
+        "adjustSwitchToOfflineMode",
+        "adjustSwitchBackToOnlineMode",
+        "adjustAddGlobalCallbackParameter",
+        "adjustAddGlobalPartnerParameter",
+        "adjustRemoveGlobalCallbackParameter",
+        "adjustRemoveGlobalPartnerParameter",
+        "adjustRemoveGlobalCallbackParameters",
+        "adjustRemoveGlobalPartnerParameters",
+        "adjustGetSdkVersion",
+        "adjustVerifyAppStorePurchase",
+        "adjustTrackAppStoreSubscription",
+        "adjustConvert",
+        "adjustRequestAppTrackingAuthorization",
+        "adjustAppTrackingAuthorizationStatus",
+        "adjustUpdateSkanConversionValue"
+      ],
+      "behaviour": "reject",
+      "when": "before-start",
+      "cause": "A supported Adjust method is called before successful startup.",
+      "fix": "Await successful Tapp.start() before calling Adjust APIs.",
+      "docs": "docs/errors.md#ios-adjust-not-started",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustMapping.swift",
+        "line": 57
+      },
+      "notes": "Forwarded by TappAdjustPlugin.swift:176, before input validation."
+    },
+    {
+      "id": "ios-android-only-fallback",
+      "code": "UNIMPLEMENTED",
+      "message": "{method} is not available on iOS.",
+      "messageKind": "pattern",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "adjustTrackPlayStoreSubscription",
+        "adjustVerifyPlayStorePurchase",
+        "adjustVerifyAndTrackPlayStorePurchase",
+        "adjustGetGoogleAdId",
+        "adjustGetAmazonAdId",
+        "adjustGetGooglePlayInstallReferrer",
+        "adjustSetReferrer"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "Defensive rejection in androidOnly if its gated body is reached.",
+      "fix": "Call these methods only on Android.",
+      "docs": "docs/errors.md#ios-android-only-fallback",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 200
+      },
+      "notes": "Currently unreachable: the mapping platform gate rejects the same methods first. Included to record the explicit source rejection site."
+    },
+    {
+      "id": "android-adjust-platform",
+      "code": "UNIMPLEMENTED",
+      "message": "{method} is not available on Android.",
+      "messageKind": "pattern",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "adjustVerifyAppStorePurchase",
+        "adjustTrackAppStoreSubscription",
+        "adjustConvert",
+        "adjustRequestAppTrackingAuthorization",
+        "adjustAppTrackingAuthorizationStatus",
+        "adjustUpdateSkanConversionValue"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "An iOS-only method is called on Android.",
+      "fix": "Gate the call by platform and use this method only on iOS.",
+      "docs": "docs/errors.md#android-adjust-platform",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 504
+      },
+      "notes": "Exact template is TappAdjustMapping.kt:164. Platform gate precedes startup and input validation."
+    },
+    {
+      "id": "android-adjust-not-started",
+      "code": "NOT_STARTED",
+      "message": "Tapp has not been started. Call start() first.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "handleEvent",
+        "getAdjustAttribution",
+        "adjustGetAdid",
+        "adjustGetIdfa",
+        "adjustTrackAdRevenue",
+        "adjustSetPushToken",
+        "adjustGdprForgetMe",
+        "adjustTrackThirdPartySharing",
+        "adjustTrackMeasurementConsent",
+        "adjustEnable",
+        "adjustDisable",
+        "adjustIsEnabled",
+        "adjustSwitchToOfflineMode",
+        "adjustSwitchBackToOnlineMode",
+        "adjustAddGlobalCallbackParameter",
+        "adjustAddGlobalPartnerParameter",
+        "adjustRemoveGlobalCallbackParameter",
+        "adjustRemoveGlobalPartnerParameter",
+        "adjustRemoveGlobalCallbackParameters",
+        "adjustRemoveGlobalPartnerParameters",
+        "adjustGetSdkVersion",
+        "adjustTrackPlayStoreSubscription",
+        "adjustVerifyPlayStorePurchase",
+        "adjustVerifyAndTrackPlayStorePurchase",
+        "adjustGetGoogleAdId",
+        "adjustGetAmazonAdId",
+        "adjustGetGooglePlayInstallReferrer",
+        "adjustSetReferrer"
+      ],
+      "behaviour": "reject",
+      "when": "before-start",
+      "cause": "A supported Adjust method is called before successful startup.",
+      "fix": "Await successful Tapp.start() before calling Adjust APIs.",
+      "docs": "docs/errors.md#android-adjust-not-started",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 508
+      }
+    },
+    {
+      "id": "android-adjust-missing-instance",
+      "code": "NOT_STARTED",
+      "message": "Tapp has not been started. Call start() first.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "handleEvent",
+        "getAdjustAttribution",
+        "adjustGetAdid",
+        "adjustGetIdfa",
+        "adjustTrackAdRevenue",
+        "adjustSetPushToken",
+        "adjustGdprForgetMe",
+        "adjustTrackThirdPartySharing",
+        "adjustTrackMeasurementConsent",
+        "adjustEnable",
+        "adjustDisable",
+        "adjustIsEnabled",
+        "adjustSwitchToOfflineMode",
+        "adjustSwitchBackToOnlineMode",
+        "adjustAddGlobalCallbackParameter",
+        "adjustAddGlobalPartnerParameter",
+        "adjustRemoveGlobalCallbackParameter",
+        "adjustRemoveGlobalPartnerParameter",
+        "adjustRemoveGlobalCallbackParameters",
+        "adjustRemoveGlobalPartnerParameters",
+        "adjustGetSdkVersion",
+        "adjustTrackPlayStoreSubscription",
+        "adjustVerifyPlayStorePurchase",
+        "adjustVerifyAndTrackPlayStorePurchase",
+        "adjustGetGoogleAdId",
+        "adjustGetAmazonAdId",
+        "adjustGetGooglePlayInstallReferrer",
+        "adjustSetReferrer"
+      ],
+      "behaviour": "reject",
+      "when": "before-start",
+      "cause": "The gate permits the call but the native instance is absent.",
+      "fix": "Await successful startup and avoid calls while the plugin is being destroyed.",
+      "docs": "docs/errors.md#android-adjust-missing-instance",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 512
+      },
+      "notes": "Defensive instance check after the started flag gate."
+    },
+    {
+      "id": "ios-event-token",
+      "code": "INVALID_ARGUMENT",
+      "message": "eventToken must be a nonblank string.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "handleEvent"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "eventToken is missing, blank or not a string.",
+      "fix": "Pass the dashboard Adjust event token as a nonblank string; never log it.",
+      "docs": "docs/errors.md#ios-event-token",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 213
+      }
+    },
+    {
+      "id": "ios-ad-revenue",
+      "code": "INVALID_ARGUMENT",
+      "message": "source and currency must be nonblank strings; revenue must be a finite, non-negative number.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "adjustTrackAdRevenue"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "source or currency is missing, blank or the wrong type, or revenue is missing, nonnumeric, non-finite or negative.",
+      "fix": "Pass nonblank source and currency strings and a finite numeric revenue greater than or equal to zero.",
+      "docs": "docs/errors.md#ios-ad-revenue",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 256
+      }
+    },
+    {
+      "id": "ios-push-token",
+      "code": "INVALID_ARGUMENT",
+      "message": "token must be a nonblank string.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "adjustSetPushToken"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "token is missing, blank or not a string.",
+      "fix": "Pass a nonblank push token string without logging it.",
+      "docs": "docs/errors.md#ios-push-token",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 267
+      }
+    },
+    {
+      "id": "ios-third-party-sharing",
+      "code": "INVALID_ARGUMENT",
+      "message": "enabled must be a boolean.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "adjustTrackThirdPartySharing"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "enabled is missing or not a boolean.",
+      "fix": "Pass enabled as true or false; numeric and string values are invalid.",
+      "docs": "docs/errors.md#ios-third-party-sharing",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 282
+      }
+    },
+    {
+      "id": "ios-measurement-consent",
+      "code": "INVALID_ARGUMENT",
+      "message": "consent must be a boolean.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "adjustTrackMeasurementConsent"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "consent is missing or not a boolean.",
+      "fix": "Pass consent as true or false; numeric and string values are invalid.",
+      "docs": "docs/errors.md#ios-measurement-consent",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 293
+      }
+    },
+    {
+      "id": "ios-add-callback",
+      "code": "INVALID_ARGUMENT",
+      "message": "key and value must be nonblank strings.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "adjustAddGlobalCallbackParameter"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "key or value is missing, blank or not a string.",
+      "fix": "Pass both key and value as nonblank strings.",
+      "docs": "docs/errors.md#ios-add-callback",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 329
+      }
+    },
+    {
+      "id": "ios-add-partner",
+      "code": "INVALID_ARGUMENT",
+      "message": "key and value must be nonblank strings.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "adjustAddGlobalPartnerParameter"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "key or value is missing, blank or not a string.",
+      "fix": "Pass both key and value as nonblank strings.",
+      "docs": "docs/errors.md#ios-add-partner",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 339
+      }
+    },
+    {
+      "id": "ios-remove-callback",
+      "code": "INVALID_ARGUMENT",
+      "message": "key must be a nonblank string.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "adjustRemoveGlobalCallbackParameter"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "key is missing, blank or not a string.",
+      "fix": "Pass key as a nonblank string.",
+      "docs": "docs/errors.md#ios-remove-callback",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 349
+      }
+    },
+    {
+      "id": "ios-remove-partner",
+      "code": "INVALID_ARGUMENT",
+      "message": "key must be a nonblank string.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "adjustRemoveGlobalPartnerParameter"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "key is missing, blank or not a string.",
+      "fix": "Pass key as a nonblank string.",
+      "docs": "docs/errors.md#ios-remove-partner",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 360
+      }
+    },
+    {
+      "id": "ios-app-store-purchase",
+      "code": "INVALID_ARGUMENT",
+      "message": "transactionId and productId must be nonblank strings.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "adjustVerifyAppStorePurchase"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "transactionId or productId is missing, blank or not a string.",
+      "fix": "Pass the App Store transactionId and productId as nonblank strings.",
+      "docs": "docs/errors.md#ios-app-store-purchase",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 389
+      }
+    },
+    {
+      "id": "ios-app-store-subscription",
+      "code": "INVALID_ARGUMENT",
+      "message": "price must be a finite number; currency and transactionId must be nonblank strings.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "adjustTrackAppStoreSubscription"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "Input validation or native AdjustAppStoreSubscription construction fails.",
+      "fix": "Pass finite numeric price and nonblank currency and transactionId strings; numeric strings and booleans are invalid.",
+      "docs": "docs/errors.md#ios-app-store-subscription",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 416
+      }
+    },
+    {
+      "id": "ios-convert-scheme",
+      "code": "INVALID_ARGUMENT",
+      "message": "scheme must be a nonblank string.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "adjustConvert"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "scheme is missing, blank or not a string after universalLink validation.",
+      "fix": "Pass a nonblank target scheme string and a valid universalLink.",
+      "docs": "docs/errors.md#ios-convert-scheme",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 431
+      }
+    },
+    {
+      "id": "ios-skan-input",
+      "code": "INVALID_ARGUMENT",
+      "message": "value must be an integer; coarseValue must be a nonblank string and lockWindow a number when present.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "adjustUpdateSkanConversionValue"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "value is missing, non-finite, fractional, not representable as native Int or the wrong type; an optional field has an invalid value.",
+      "fix": "Pass an integer value, optional nonblank coarseValue and optional finite numeric lockWindow. Null optional fields count as absent.",
+      "docs": "docs/errors.md#ios-skan-input",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 456
+      },
+      "notes": "The iOS mapping also accepts a boolean lockWindow despite the message and TypeScript number type. No SKAN value range is enforced by this bridge."
+    },
+    {
+      "id": "ios-convert-url",
+      "code": "INVALID_URL",
+      "message": "universalLink must be a nonempty, valid URL.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "adjustConvert"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "universalLink is missing, blank, the wrong type, unparsable, lacks a scheme, or uses javascript:, data: or file: (case-insensitive).",
+      "fix": "Pass a valid absolute universalLink with an allowed scheme and a nonblank target scheme.",
+      "docs": "docs/errors.md#ios-convert-url",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 427
+      },
+      "notes": "Uses parsedURL, like core URL validation, but runs after the platform and startup gates and before scheme validation."
+    },
+    {
+      "id": "ios-skan-native",
+      "code": "SKAN_ERROR",
+      "message": "error.localizedDescription",
+      "messageKind": "localizedDescription",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "adjustUpdateSkanConversionValue"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "Native SKAN completion returns an error.",
+      "fix": "Check SKAdNetwork setup and supported conversion values on the target iOS device; handle the native failure.",
+      "docs": "docs/errors.md#ios-skan-native",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 463
+      }
+    },
+    {
+      "id": "ios-purchase-no-result",
+      "code": "UNAVAILABLE",
+      "message": "Purchase verification returned no result.",
+      "messageKind": "exact",
+      "platforms": [
+        "ios"
+      ],
+      "methods": [
+        "adjustVerifyAppStorePurchase"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "The native verification callback supplies nil.",
+      "fix": "Check the App Store transaction and product identifiers and native purchase-verification setup; handle an unavailable result.",
+      "docs": "docs/errors.md#ios-purchase-no-result",
+      "source": {
+        "file": "ios/Sources/TappAdjustCapacitorPlugin/TappAdjustPlugin.swift",
+        "line": 396
+      }
+    },
+    {
+      "id": "android-adjust-event-native",
+      "code": "HANDLE_EVENT_ERROR",
+      "message": "Unable to handle Adjust event.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "handleEvent"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "The native Adjust event call throws.",
+      "fix": "Check startup and the Adjust event token configured for the app; handle delivery failure without logging the token.",
+      "docs": "docs/errors.md#android-adjust-event-native",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 223
+      }
+    },
+    {
+      "id": "android-ad-revenue-input",
+      "code": "INVALID_ARGUMENT",
+      "message": "Nonempty source and currency and a finite, non-negative revenue are required.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "adjustTrackAdRevenue"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "source or currency is missing, blank or the wrong type, or revenue is missing, nonnumeric, non-finite or negative.",
+      "fix": "Pass nonblank source and currency strings and finite numeric revenue greater than or equal to zero.",
+      "docs": "docs/errors.md#android-ad-revenue-input",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 257
+      }
+    },
+    {
+      "id": "android-subscription-input",
+      "code": "INVALID_ARGUMENT",
+      "message": "A finite price, optional finite purchaseTime, and nonempty currency, sku, orderId, signature, and purchaseToken are required.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "adjustTrackPlayStoreSubscription"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "A required string is missing, blank or the wrong type, or price or a supplied purchaseTime is not a finite number.",
+      "fix": "Pass all required strings, numeric price in micro-units and optional finite numeric purchaseTime. Never log purchase data.",
+      "docs": "docs/errors.md#android-subscription-input",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 415
+      },
+      "notes": "Null purchaseTime counts as absent. Native Long conversion truncates fractional price and purchaseTime toward zero; fractional input does not reject. The bridge does not impose non-negativity on these fields."
+    },
+    {
+      "id": "android-purchase-input",
+      "code": "INVALID_ARGUMENT",
+      "message": "Nonempty transactionId and productId are required.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "adjustVerifyPlayStorePurchase"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "transactionId or productId is missing, blank or not a string.",
+      "fix": "Pass the Play purchase token as transactionId and the product identifier as productId; never log the purchase token.",
+      "docs": "docs/errors.md#android-purchase-input",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 436
+      }
+    },
+    {
+      "id": "android-required-string",
+      "code": "INVALID_ARGUMENT",
+      "message": "A nonempty {key} is required.",
+      "messageKind": "pattern",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "handleEvent",
+        "adjustSetPushToken",
+        "adjustRemoveGlobalCallbackParameter",
+        "adjustRemoveGlobalPartnerParameter",
+        "adjustVerifyAndTrackPlayStorePurchase",
+        "adjustSetReferrer"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "A required string field is missing, blank (including whitespace-only) or the wrong type.",
+      "fix": "Pass the required field as a nonblank string; never log tokens or referrer data.",
+      "docs": "docs/errors.md#android-required-string",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 520
+      },
+      "notes": "key substitutions: handleEvent and adjustVerifyAndTrackPlayStorePurchase \u2192 eventToken; adjustSetPushToken \u2192 token; adjustRemoveGlobalCallbackParameter and adjustRemoveGlobalPartnerParameter \u2192 key; adjustSetReferrer \u2192 referrer."
+    },
+    {
+      "id": "android-required-boolean",
+      "code": "INVALID_ARGUMENT",
+      "message": "{key} must be a boolean.",
+      "messageKind": "pattern",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "adjustTrackThirdPartySharing",
+        "adjustTrackMeasurementConsent"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "A required boolean is missing or has the wrong type.",
+      "fix": "Pass enabled or consent as true or false; numeric and string values are invalid.",
+      "docs": "docs/errors.md#android-required-boolean",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 526
+      },
+      "notes": "key is enabled for adjustTrackThirdPartySharing and consent for adjustTrackMeasurementConsent."
+    },
+    {
+      "id": "android-global-parameter-input",
+      "code": "INVALID_ARGUMENT",
+      "message": "Nonempty key and value are required.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "adjustAddGlobalCallbackParameter",
+        "adjustAddGlobalPartnerParameter"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "key or value is missing, blank or not a string.",
+      "fix": "Pass both key and value as nonblank strings.",
+      "docs": "docs/errors.md#android-global-parameter-input",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 534
+      }
+    },
+    {
+      "id": "android-install-referrer-native",
+      "code": "INSTALL_REFERRER_ERROR",
+      "message": "Unable to read the Google Play install referrer.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "adjustGetGooglePlayInstallReferrer"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "The native install-referrer listener calls onFail.",
+      "fix": "Check Google Play installation and install-referrer service availability on the device; handle the unavailable read.",
+      "docs": "docs/errors.md#android-install-referrer-native",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 487
+      },
+      "notes": "Native failure text is deliberately discarded. A null onInstallReferrerRead result resolves an empty object instead."
+    },
+    {
+      "id": "android-purchase-no-result",
+      "code": "UNAVAILABLE",
+      "message": "The Adjust SDK returned no verification result.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "adjustVerifyPlayStorePurchase",
+        "adjustVerifyAndTrackPlayStorePurchase"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "The verification callback returns null, or its verificationStatus or message is null.",
+      "fix": "Check purchase-verification setup and method input, and handle the unavailable result.",
+      "docs": "docs/errors.md#android-purchase-no-result",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 553
+      },
+      "notes": "verifyResult in TappAdjustMapping.kt returns null when a required field is absent. A nonnull result with a verification failure status still resolves as VerifyResult; its numeric code is not a bridge error code."
+    },
+    {
+      "id": "android-adjust-native-void",
+      "code": "UNAVAILABLE",
+      "message": "The Adjust SDK call failed.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "adjustTrackAdRevenue",
+        "adjustSetPushToken",
+        "adjustGdprForgetMe",
+        "adjustTrackThirdPartySharing",
+        "adjustTrackMeasurementConsent",
+        "adjustEnable",
+        "adjustDisable",
+        "adjustSwitchToOfflineMode",
+        "adjustSwitchBackToOnlineMode",
+        "adjustAddGlobalCallbackParameter",
+        "adjustAddGlobalPartnerParameter",
+        "adjustRemoveGlobalCallbackParameter",
+        "adjustRemoveGlobalPartnerParameter",
+        "adjustRemoveGlobalCallbackParameters",
+        "adjustRemoveGlobalPartnerParameters",
+        "adjustTrackPlayStoreSubscription",
+        "adjustSetReferrer"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "A synchronous exception escapes the wrapped native Adjust call.",
+      "fix": "Check successful startup, method input and native Adjust configuration; handle the failure without logging native payloads.",
+      "docs": "docs/errors.md#android-adjust-native-void",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 570
+      },
+      "notes": "Message is ADJUST_FAILED from TappAdjustMapping.kt:124, not an error code. Native text is discarded."
+    },
+    {
+      "id": "android-adjust-native-callback",
+      "code": "UNAVAILABLE",
+      "message": "The Adjust SDK call failed.",
+      "messageKind": "exact",
+      "platforms": [
+        "android"
+      ],
+      "methods": [
+        "getAdjustAttribution",
+        "adjustGetAdid",
+        "adjustGetIdfa",
+        "adjustIsEnabled",
+        "adjustGetSdkVersion",
+        "adjustVerifyPlayStorePurchase",
+        "adjustVerifyAndTrackPlayStorePurchase",
+        "adjustGetGoogleAdId",
+        "adjustGetAmazonAdId",
+        "adjustGetGooglePlayInstallReferrer"
+      ],
+      "behaviour": "reject",
+      "when": "after-start",
+      "cause": "A synchronous exception escapes the wrapped native Adjust call.",
+      "fix": "Check successful startup, method input and native Adjust configuration; handle the failure without logging native payloads.",
+      "docs": "docs/errors.md#android-adjust-native-callback",
+      "source": {
+        "file": "android/src/main/java/so/tapp/capacitor/adjust/TappAdjustPlugin.kt",
+        "line": 579
+      },
+      "notes": "Message is ADJUST_FAILED from TappAdjustMapping.kt:124, not an error code. Native text is discarded. Rejection occurs only if the callback has not already settled the call."
+    },
+    {
+      "id": "web-url-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "url"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-url-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 66
+      }
+    },
+    {
+      "id": "web-handleTappEvent-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "handleTappEvent"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-handleTappEvent-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 74
+      }
+    },
+    {
+      "id": "web-handleEvent-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "handleEvent"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-handleEvent-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 108
+      }
+    },
+    {
+      "id": "web-getAdjustAttribution-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "getAdjustAttribution"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-getAdjustAttribution-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 116
+      }
+    },
+    {
+      "id": "web-adjustGetAdid-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustGetAdid"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustGetAdid-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 124
+      }
+    },
+    {
+      "id": "web-adjustGetIdfa-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustGetIdfa"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustGetIdfa-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 132
+      }
+    },
+    {
+      "id": "web-adjustTrackAdRevenue-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustTrackAdRevenue"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustTrackAdRevenue-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 140
+      }
+    },
+    {
+      "id": "web-adjustSetPushToken-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustSetPushToken"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustSetPushToken-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 148
+      }
+    },
+    {
+      "id": "web-adjustGdprForgetMe-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustGdprForgetMe"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustGdprForgetMe-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 156
+      }
+    },
+    {
+      "id": "web-adjustTrackThirdPartySharing-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustTrackThirdPartySharing"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustTrackThirdPartySharing-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 164
+      }
+    },
+    {
+      "id": "web-adjustTrackMeasurementConsent-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustTrackMeasurementConsent"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustTrackMeasurementConsent-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 172
+      }
+    },
+    {
+      "id": "web-adjustEnable-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustEnable"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustEnable-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 180
+      }
+    },
+    {
+      "id": "web-adjustDisable-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustDisable"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustDisable-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 188
+      }
+    },
+    {
+      "id": "web-adjustIsEnabled-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustIsEnabled"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustIsEnabled-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 196
+      }
+    },
+    {
+      "id": "web-adjustSwitchToOfflineMode-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustSwitchToOfflineMode"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustSwitchToOfflineMode-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 204
+      }
+    },
+    {
+      "id": "web-adjustSwitchBackToOnlineMode-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustSwitchBackToOnlineMode"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustSwitchBackToOnlineMode-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 212
+      }
+    },
+    {
+      "id": "web-adjustAddGlobalCallbackParameter-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustAddGlobalCallbackParameter"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustAddGlobalCallbackParameter-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 220
+      }
+    },
+    {
+      "id": "web-adjustAddGlobalPartnerParameter-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustAddGlobalPartnerParameter"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustAddGlobalPartnerParameter-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 228
+      }
+    },
+    {
+      "id": "web-adjustRemoveGlobalCallbackParameter-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustRemoveGlobalCallbackParameter"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustRemoveGlobalCallbackParameter-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 238
+      }
+    },
+    {
+      "id": "web-adjustRemoveGlobalPartnerParameter-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustRemoveGlobalPartnerParameter"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustRemoveGlobalPartnerParameter-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 248
+      }
+    },
+    {
+      "id": "web-adjustRemoveGlobalCallbackParameters-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustRemoveGlobalCallbackParameters"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustRemoveGlobalCallbackParameters-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 256
+      }
+    },
+    {
+      "id": "web-adjustRemoveGlobalPartnerParameters-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustRemoveGlobalPartnerParameters"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustRemoveGlobalPartnerParameters-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 264
+      }
+    },
+    {
+      "id": "web-adjustGetSdkVersion-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustGetSdkVersion"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustGetSdkVersion-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 272
+      }
+    },
+    {
+      "id": "web-adjustVerifyAppStorePurchase-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustVerifyAppStorePurchase"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustVerifyAppStorePurchase-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 282
+      }
+    },
+    {
+      "id": "web-adjustTrackAppStoreSubscription-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustTrackAppStoreSubscription"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustTrackAppStoreSubscription-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 292
+      }
+    },
+    {
+      "id": "web-adjustConvert-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustConvert"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustConvert-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 300
+      }
+    },
+    {
+      "id": "web-adjustRequestAppTrackingAuthorization-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustRequestAppTrackingAuthorization"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustRequestAppTrackingAuthorization-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 308
+      }
+    },
+    {
+      "id": "web-adjustAppTrackingAuthorizationStatus-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustAppTrackingAuthorizationStatus"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustAppTrackingAuthorizationStatus-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 316
+      }
+    },
+    {
+      "id": "web-adjustUpdateSkanConversionValue-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustUpdateSkanConversionValue"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustUpdateSkanConversionValue-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 324
+      }
+    },
+    {
+      "id": "web-adjustTrackPlayStoreSubscription-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustTrackPlayStoreSubscription"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustTrackPlayStoreSubscription-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 334
+      }
+    },
+    {
+      "id": "web-adjustVerifyPlayStorePurchase-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustVerifyPlayStorePurchase"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustVerifyPlayStorePurchase-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 344
+      }
+    },
+    {
+      "id": "web-adjustVerifyAndTrackPlayStorePurchase-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustVerifyAndTrackPlayStorePurchase"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustVerifyAndTrackPlayStorePurchase-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 352
+      }
+    },
+    {
+      "id": "web-adjustGetGoogleAdId-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustGetGoogleAdId"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustGetGoogleAdId-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 360
+      }
+    },
+    {
+      "id": "web-adjustGetAmazonAdId-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustGetAmazonAdId"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustGetAmazonAdId-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 368
+      }
+    },
+    {
+      "id": "web-adjustGetGooglePlayInstallReferrer-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustGetGooglePlayInstallReferrer"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustGetGooglePlayInstallReferrer-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 376
+      }
+    },
+    {
+      "id": "web-adjustSetReferrer-unsupported",
+      "code": "UNIMPLEMENTED",
+      "message": "Not implemented on web.",
+      "messageKind": "exact",
+      "platforms": [
+        "web"
+      ],
+      "methods": [
+        "adjustSetReferrer"
+      ],
+      "behaviour": "reject",
+      "when": "either",
+      "cause": "This API requires a supported native platform.",
+      "fix": "Gate the call by platform and use a supported iOS or Android implementation.",
+      "docs": "docs/errors.md#web-adjustSetReferrer-unsupported",
+      "source": {
+        "file": "src/web.ts",
+        "line": 384
+      }
+    }
+  ],
+  "notes": "Source audit for tapp-adjust-capacitor-sdk 0.1.0-alpha.2. One row per message-producing rejection or resolve-error source site, with shared helpers listing all affected methods. Mapping gate messages are cataloged at their producer; generic bridge forwarding adds no separate message. code=null means a resolved {error:true,message} payload with no error code. Dynamic native/backend messages are patterns or localizedDescription, not fixed strings. Async TypeScript throws are promise rejections. Internal coroutine cancellation and listener events are explained in the Markdown notes, not assigned invented bridge codes."
+}

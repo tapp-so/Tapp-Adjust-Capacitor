@@ -1,0 +1,13 @@
+---
+alwaysApply: false
+description: Tapp SDK integration
+---
+Read the repository-root AGENTS.md for integration and contributor instructions.
+
+- Choose exactly one of tapp-capacitor-sdk or tapp-adjust-capacitor-sdk, never both. Android fails configuration when both are present; iOS has no compile-time guard and co-installing is unsupported and unsafe.
+- Call start() first and wait for it to finish before generate-link, events, or Adjust APIs; gate iOS-only and Android-only methods by platform.
+- Wire the iOS Associated Domains entitlement (and CODE_SIGN_ENTITLEMENTS) and Android autoVerify App Links intent filter; add NSUserTrackingUsageDescription when using ATT APIs.
+- If a Podfile declares source lines, tapp-so/Specs.git must come before cdn.cocoapods.org / trunk, and the CDN line must be present.
+- Never hard-code authToken or tappToken; load them from the environment and set Capacitor loggingBehavior to 'none'.
+
+Use "device match" and "SHA-256 certificate hash". Never log tokens.
